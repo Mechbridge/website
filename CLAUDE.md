@@ -10,7 +10,11 @@ Marketing site for **Mechbridge International** (mechbridgegroup.com): MEP, fire
 npm run dev       # Astro dev server on http://localhost:4321 (also .claude/launch.json "mechbridge-site")
 npm run build     # static build to dist/ (12 pages + sitemap)
 npm run preview   # serve dist/
+npm run deploy:pages  # build with base /website and force-push dist/ to gh-pages → https://mechbridge.github.io/website/
+git clone --recurse-submodules https://github.com/Mechbridge/website.git   # brand-theme/ is a submodule (Mechbridge/colorscheme)
 ```
+
+Repo: `Mechbridge/website` (public). GitHub Pages serves the `gh-pages` branch, which only `deploy:pages` writes; never edit it by hand. Production is meant for `mechbridgegroup.com` at the root. `astro.config.mjs` reads `SITE_URL` and `BASE_PATH` only for the preview build. Every root-relative link must go through `u()` from `src/lib/url.ts` so it picks up the base. Use `stripBase()` when comparing against `Astro.url.pathname`. In Git Bash, set `MSYS_NO_PATHCONV=1` when passing `BASE_PATH`, or MSYS rewrites `/website` into a Windows path.
 
 There are no tests or linters. `npm run build` is the check: it fails on TypeScript/Astro errors in components and page scripts.
 
