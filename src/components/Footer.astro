@@ -1,0 +1,72 @@
+---
+import { u } from '../lib/url';
+import Logo from './Logo.astro';
+import { site, offices } from '../data/site';
+import { tracks } from '../data/tracks';
+const year = new Date().getFullYear();
+---
+<footer class="foot">
+  <div class="wrap">
+    <div class="foot__top">
+      <a href={u('/')} class="foot__logo" aria-label="Mechbridge International, home"><Logo /></a>
+      <p class="foot__line">MEP design, fire and life safety, and engineer-led training. Dubai, India and Saudi Arabia.</p>
+    </div>
+    <div class="foot__cols">
+      <div>
+        <h2 class="foot__h">Company</h2>
+        <ul>
+          <li><a href={u('/services')}>Services</a></li>
+          <li><a href={u('/about')}>About</a></li>
+          <li><a href={u('/training')}>Training</a></li>
+          <li><a href={u('/contact')}>Contact</a></li>
+        </ul>
+      </div>
+      <div>
+        <h2 class="foot__h">Training tracks</h2>
+        <ul>
+          {tracks.map((t) => <li><a href={u(`/training/${t.slug}`)}>{t.title}</a></li>)}
+        </ul>
+      </div>
+      <div>
+        <h2 class="foot__h">Write to us</h2>
+        <ul>
+          <li><span class="foot__k">Projects and training</span><a href={`mailto:${site.connect}`}>{site.connect}</a></li>
+          <li><span class="foot__k">Client support</span><a href={`mailto:${site.support}`}>{site.support}</a></li>
+        </ul>
+      </div>
+      <div>
+        <h2 class="foot__h">Offices</h2>
+        <ul>
+          {offices.map((o) => <li class="foot__office"><span class="foot__k">{o.role}</span><span>{o.city}</span></li>)}
+        </ul>
+      </div>
+    </div>
+    <div class="foot__base">
+      <p>© {year} Mechbridge International. Training is delivered by Mechbridge MEP Consultants.</p>
+      <p class="mono">{site.domain}</p>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .foot { background: var(--navy-950); color: var(--cream-300); padding: clamp(72px, 9vw, 128px) 0 32px; position: relative; z-index: 2; }
+  .foot__top { display: grid; grid-template-columns: auto 1fr; gap: 48px; align-items: end; padding-bottom: 56px; border-bottom: 1px solid var(--navy-600); }
+  .foot__logo { color: var(--cream-300); display: block; }
+  .foot__logo :global(svg) { height: clamp(88px, 10vw, 132px); width: auto; }
+  .foot__line { max-width: 40ch; justify-self: end; color: var(--navy-100); font-size: 1.0625rem; }
+  .foot__cols { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 32px; padding: 56px 0; }
+  .foot__h { font-family: var(--f-mono); font-size: var(--t-micro); font-weight: 500; letter-spacing: .14em; text-transform: uppercase; color: var(--navy-200); margin-bottom: 18px; line-height: 1.4; font-variation-settings: normal; }
+  .foot ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+  .foot li { display: grid; }
+  .foot a { color: var(--cream-300); text-decoration: none; min-height: 44px; display: inline-flex; align-items: center; overflow-wrap: anywhere; transition: color .2s; }
+  .foot a:hover { color: var(--red-300); }
+  .foot__k { font-size: var(--t-micro); color: var(--navy-200); font-family: var(--f-mono); letter-spacing: .04em; margin-top: 6px; }
+  .foot__office span:last-child { padding: 6px 0 8px; }
+  .foot__base { display: flex; justify-content: space-between; gap: 24px; flex-wrap: wrap; padding-top: 28px; border-top: 1px solid var(--navy-600); color: var(--navy-200); font-size: var(--t-small); }
+  @media (max-width: 899px) {
+    .foot__top { grid-template-columns: 1fr; gap: 24px; }
+    .foot__line { justify-self: start; }
+    .foot__cols { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 479px) { .foot__cols { grid-template-columns: 1fr; } }
+</style>

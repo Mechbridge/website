@@ -1,0 +1,28 @@
+---
+import { u } from '../lib/url';
+import Base from '../layouts/Base.astro';
+import FlutedGlass from '../components/FlutedGlass.astro';
+import Arrow from '../components/Arrow.astro';
+---
+<Base title="Page not found" description="This page isn't on the drawing set.">
+  <section class="nf" data-enter aria-labelledby="nf-h">
+    <div class="wrap nf__grid">
+      <div class="nf__copy">
+        <h1 id="nf-h">This page isn't on the drawing set.</h1>
+        <p class="lede" data-enter-item>The link may be old, or the page moved. Try one of these instead.</p>
+        <div class="btn-row" data-enter-item>
+          <a class="btn" href={u('/')}>Go to the home page <Arrow /></a>
+          <a class="btn btn--ghost" href={u('/training')}>See training tracks</a>
+        </div>
+      </div>
+      <div data-enter-item><FlutedGlass ratio="1 / 1" rib={20} left="404" right="Not found" /></div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .nf { background: var(--navy-800); min-height: 100svh; display: flex; align-items: center; padding: calc(var(--nav-h) + 48px) 0 80px; }
+  .nf__grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: clamp(40px, 6vw, 96px); align-items: center; }
+  .nf__copy { display: grid; gap: 28px; }
+  @media (max-width: 899px) { .nf__grid { grid-template-columns: 1fr; } }
+</style>

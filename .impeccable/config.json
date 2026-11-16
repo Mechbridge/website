@@ -1,0 +1,26 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "low-contrast",
+        "value": "*",
+        "files": [
+          "brand-theme/preview.html"
+        ],
+        "createdAt": "2026-11-14T09:26:58.326Z",
+        "reason": "Claude: preview deliberately shows failing pairings (red on navy, navy on red) as 'don't' examples and in the WCAG table; all live pairings verified >= 4.5:1"
+      },
+      {
+        "rule": "low-contrast",
+        "value": "*",
+        "files": [
+          "brand-theme/index.html"
+        ],
+        "createdAt": "2026-11-14T09:35:37.703Z",
+        "reason": "Claude: preview (renamed from preview.html) deliberately shows failing pairings (red on navy, navy on red) as 'don't' examples and in the WCAG table; all live pairings verified >= 4.5:1"
+      }
+    ]
+  }
+}

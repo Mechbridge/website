@@ -1,0 +1,139 @@
+---
+import { tracks } from '../data/tracks';
+import { site } from '../data/site';
+import Arrow from './Arrow.astro';
+interface Props { topic?: 'training' | 'consultancy' | 'support'; track?: string; id?: string; submit?: string }
+const { topic = 'training', track = '', id = 'enquiry', submit = 'Send enquiry' } = Astro.props;
+const key = import.meta.env.PUBLIC_WEB3FORMS_KEY ?? '';
+---
+<form class="form" id={id} data-enquiry data-key={key} data-mailto={site.connect} novalidate>
+  <div class="form__row">
+    <div class="field">
+      <label for={`${id}-name`}>Full name</label>
+      <input id={`${id}-name`} name="name" autocomplete="name" required aria-describedby={`${id}-name-err`} />
+      <p class="err" id={`${id}-name-err`} aria-live="polite"></p>
+    </div>
+    <div class="field">
+      <label for={`${id}-email`}>Email</label>
+      <input id={`${id}-email`} name="email" type="email" autocomplete="email" required aria-describedby={`${id}-email-err`} />
+      <p class="err" id={`${id}-email-err`} aria-live="polite"></p>
+    </div>
+  </div>
+  <div class="form__row">
+    <div class="field">
+      <label for={`${id}-topic`}>What is this about?</label>
+      <select id={`${id}-topic`} name="topic" data-topic>
+        <option value="training" selected={topic === 'training'}>Training</option>
+        <option value="consultancy" selected={topic === 'consultancy'}>A project (consultancy)</option>
+        <option value="support" selected={topic === 'support'}>Support for an existing project</option>
+      </select>
+    </div>
+    <div class="field" data-track-field>
+      <label for={`${id}-track`}>Training track</label>
+      <select id={`${id}-track`} name="track">
+        <option value="">Not sure yet</option>
+        {tracks.map((t) => <option value={t.title} selected={track === t.slug}>{t.title}</option>)}
+      </select>
+    </div>
+  </div>
+  <div class="form__row">
+    <div class="field">
+      <label for={`${id}-country`}>Where are you based?</label>
+      <select id={`${id}-country`} name="country" autocomplete="country-name">
+        <option>United Arab Emirates</option>
+        <option>Saudi Arabia</option>
+        <option>India</option>
+        <option>Another GCC country</option>
+        <option>Somewhere else</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for={`${id}-phone`}>Phone or WhatsApp <span class="hint">(optional)</span></label>
+      <input id={`${id}-phone`} name="phone" type="tel" autocomplete="tel" inputmode="tel" />
+    </div>
+  </div>
+  <div class="field">
+    <label for={`${id}-msg`}>Message</label>
+    <textarea id={`${id}-msg`} name="message" required aria-describedby={`${id}-msg-err`} placeholder="Your background, the track you're looking at, or the project you need help with."></textarea>
+    <p class="err" id={`${id}-msg-err`} aria-live="polite"></p>
+  </div>
+  <input type="checkbox" name="botcheck" class="sr-only" tabindex="-1" autocomplete="off" aria-hidden="true" />
+  <div class="btn-row">
+    <button class="btn" type="submit">{submit}<Arrow /></button>
+    <p class="body form__alt">Or write to <a class="link" href={`mailto:${site.connect}`}>{site.connect}</a></p>
+  </div>
+  <p class="form__status" role="status" aria-live="polite" data-status></p>
+</form>
+
+<style>
+  .form__alt { font-size: var(--t-small); }
+  .form__alt .link { min-height: 0; }
+</style>
+
+<script>
+  const SUPPORT = 'support@mechbridgegroup.com';
+  document.querySelectorAll<HTMLFormElement>('form[data-enquiry]').forEach((form) => {
+    const status = form.querySelector<HTMLElement>('[data-status]')!;
+    const topic = form.querySelector<HTMLSelectElement>('[data-topic]')!;
+    const trackField = form.querySelector<HTMLElement>('[data-track-field]')!;
+    const syncTopic = () => { trackField.hidden = topic.value !== 'training'; };
+    topic.addEventListener('change', syncTopic);
+    syncTopic();
+
+    const setErr = (name: string, msg: string) => {
+      const input = form.elements.namedItem(name) as HTMLInputElement;
+      const err = form.querySelector<HTMLElement>(`#${input.getAttribute('aria-describedby')}`);
+      input.setAttribute('aria-invalid', msg ? 'true' : 'false');
+      if (err) err.textContent = msg;
+      return !msg;
+    };
+    const validate = () => {
+      const d = new FormData(form);
+      const name = String(d.get('name') || '').trim();
+      const email = String(d.get('email') || '').trim();
+      const msg = String(d.get('message') || '').trim();
+      const ok = [
+        setErr('name', name ? '' : 'Add your name so we know who to reply to.'),
+        setErr('email', /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? '' : 'Enter an email address we can reply to, like name@company.com.'),
+        setErr('message', msg.length >= 10 ? '' : 'Tell us a little more, at least a sentence.'),
+      ];
+      return ok.every(Boolean);
+    };
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      status.textContent = '';
+      if (!validate()) { (form.querySelector('[aria-invalid="true"]') as HTMLElement)?.focus(); return; }
+      const d = new FormData(form);
+      const t = String(d.get('topic'));
+      const subject = t === 'training' ? `Training enquiry${d.get('track') ? `: ${d.get('track')}` : ''}` : t === 'support' ? 'Support request' : 'Project enquiry';
+      const key = form.dataset.key;
+      if (!key) {
+        const to = t === 'support' ? SUPPORT : form.dataset.mailto;
+        const body = ['name', 'email', 'country', 'phone', 'track', 'message'].map((k) => `${k}: ${d.get(k) ?? ''}`).join('\n');
+        window.location.href = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        status.dataset.state = 'ok';
+        status.textContent = 'Your email app should open with the message filled in. Press send there to reach us.';
+        return;
+      }
+      const btn = form.querySelector<HTMLButtonElement>('button[type="submit"]')!;
+      btn.setAttribute('aria-busy', 'true');
+      d.append('access_key', key);
+      d.append('subject', subject);
+      d.append('from_name', 'mechbridgegroup.com');
+      try {
+        const res = await fetch('https://api.web3forms.com/submit', { method: 'POST', body: d, headers: { Accept: 'application/json' } });
+        const json = await res.json();
+        if (!res.ok || !json.success) throw new Error(json.message || 'Send failed');
+        form.reset(); syncTopic();
+        status.dataset.state = 'ok';
+        status.textContent = "Thanks, your message is with us. We'll reply to the email address you gave.";
+      } catch {
+        status.dataset.state = 'error';
+        status.textContent = `That didn't send. Check your connection and try again, or email ${form.dataset.mailto} directly.`;
+      } finally {
+        btn.removeAttribute('aria-busy');
+      }
+    });
+  });
+</script>

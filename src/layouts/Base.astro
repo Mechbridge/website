@@ -1,0 +1,78 @@
+---
+import { u, stripBase } from '../lib/url';
+import '@fontsource-variable/bricolage-grotesque/standard.css';
+import '@fontsource-variable/geist';
+import '@fontsource-variable/geist-mono';
+import '@fontsource-variable/doto';
+import '../styles/global.css';
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
+import { site, offices } from '../data/site';
+
+interface Props {
+  title: string;
+  description: string;
+  glassNav?: boolean;
+  og?: string;
+}
+const { title, description, glassNav = false, og = '/images/og-default.jpg' } = Astro.props;
+// Canonical and share URLs always point at the production domain, even on a preview host.
+const canonical = new URL(stripBase(Astro.url.pathname), site.url).href;
+const fullTitle = title === site.name ? `${site.name} | MEP consultancy and engineer-led training` : `${title} | ${site.name}`;
+const org = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: site.name,
+  url: site.url,
+  logo: `${site.url}/logo/mechbridge-red.svg`,
+  email: site.connect,
+  subOrganization: { '@type': 'Organization', name: site.training },
+  location: offices.map((o) => ({ '@type': 'Place', name: `${site.name}, ${o.city}`, address: { '@type': 'PostalAddress', addressCountry: o.country } })),
+};
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" href={u('/favicon.svg')} type="image/svg+xml" />
+    <meta name="theme-color" content="#131E32" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={site.name} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={new URL(og, site.url).href} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <script type="application/ld+json" set:html={JSON.stringify(org)} />
+    <script is:inline>
+      document.documentElement.classList.add('js');
+      setTimeout(function () { document.documentElement.classList.add('motion-ready'); }, 2500);
+    </script>
+    <style is:global>
+      .js:not(.motion-ready) [data-enter] > * { opacity: 0; }
+      @media (prefers-reduced-motion: reduce) { .js:not(.motion-ready) [data-enter] > * { opacity: 1; } }
+    </style>
+    <slot name="head" />
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+    <Nav glass={glassNav} />
+    <slot name="outside" />
+    <div id="smooth-wrapper">
+      <div id="smooth-content">
+        <main id="main" tabindex="-1">
+          <slot />
+        </main>
+        <Footer />
+      </div>
+    </div>
+    <script>
+      import { initMotion } from '../scripts/motion';
+      initMotion();
+    </script>
+  </body>
+</html>

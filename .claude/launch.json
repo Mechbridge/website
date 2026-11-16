@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "mechbridge-site",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--", "--port", "4321"],
+      "port": 4321
+    },
+    {
+      "name": "mechbridge-harness",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["C:\Users\Work\AppData\Local\Temp\claude\fcd3e1cae8927c5f\53fbba34-34dd-494b-960d-5d8878640001\scratchpad\harness\serve.js"],
+      "port": 8765
+    }
+  ]
+}

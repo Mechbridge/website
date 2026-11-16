@@ -1,0 +1,130 @@
+---
+import { u, stripBase } from '../lib/url';
+import Logo from './Logo.astro';
+import { nav } from '../data/site';
+interface Props { glass?: boolean }
+const { glass = false } = Astro.props;
+const path = stripBase(Astro.url.pathname).replace(/\/$/, '') || '/';
+const isActive = (href: string) => (href === '/' ? path === '/' : path.startsWith(href));
+---
+<header class:list={['nav', { 'nav--glass': glass }]} data-nav>
+  <div class="nav__bar">
+    <a class="nav__brand" href={u('/')} aria-label="Mechbridge International, home">
+      <Logo class="nav__logo" />
+      <span class="nav__sub" aria-hidden="true">International</span>
+    </a>
+    <nav class="nav__links" aria-label="Main">
+      <ul>
+        {nav.map((l) => (
+          <li>
+            <a href={u(l.href)} aria-current={isActive(l.href) ? 'page' : undefined}>
+              {l.label}
+              {l.badge && <span class="nav__badge dot live">{l.badge}</span>}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+    <a class="btn btn--sm nav__cta" href={u('/training#enquire')}>Enquire about training</a>
+    <button class="nav__toggle" type="button" aria-expanded="false" aria-controls="menu" data-menu-toggle>
+      <span class="sr-only" data-menu-label>Open menu</span>
+      <span class="nav__burger" aria-hidden="true"><i></i><i></i></span>
+    </button>
+  </div>
+  <div class="menu" id="menu" hidden data-menu>
+    <nav aria-label="Mobile">
+      <ul>
+        {nav.map((l, i) => (
+          <li style={`--i:${i}`}>
+            <a href={u(l.href)} aria-current={isActive(l.href) ? 'page' : undefined}>
+              <span>{l.label}</span>
+              {l.badge && <span class="nav__badge dot live">{l.badge}</span>}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+    <div class="menu__foot">
+      <a class="btn" href={u('/training#enquire')}>Enquire about training</a>
+      <a class="link" href="mailto:connect@mechbridgegroup.com">connect@mechbridgegroup.com</a>
+    </div>
+  </div>
+</header>
+
+<style>
+  .nav { position: fixed; inset: 0 0 auto; z-index: 100; color: var(--cream-300); pointer-events: none; }
+  .nav__bar {
+    pointer-events: auto;
+    display: flex; align-items: center; gap: clamp(16px, 3vw, 40px);
+    height: var(--nav-h); padding-inline: var(--gutter);
+    background: var(--navy-800); border-bottom: 1px solid var(--navy-600);
+    transition: background-color .4s var(--ease), border-color .4s var(--ease), height .3s var(--ease);
+  }
+  .nav--glass .nav__bar {
+    background: rgb(13 21 35 / .62);
+    -webkit-backdrop-filter: blur(18px) saturate(150%); backdrop-filter: blur(18px) saturate(150%);
+    border-bottom-color: rgb(240 225 206 / .12);
+  }
+  :global(.menu-open) .nav__bar { background: var(--navy-900); }
+  .nav.is-scrolled .nav__bar { height: 64px; }
+  .nav__brand { display: flex; align-items: center; gap: 14px; text-decoration: none; color: var(--cream-300); min-height: 44px; }
+  .nav__brand :global(.nav__logo) { height: 46px; width: auto; transition: height .3s var(--ease); }
+  .nav.is-scrolled .nav__brand :global(.nav__logo) { height: 40px; }
+  .nav__sub { font-family: var(--f-mono); font-size: .6875rem; letter-spacing: .22em; text-transform: uppercase; padding-left: 14px; border-left: 1px solid rgb(240 225 206 / .3); line-height: 1.2; }
+  .nav__links { margin-left: auto; }
+  .nav__links ul { display: flex; gap: 4px; list-style: none; margin: 0; padding: 0; }
+  .nav__links a {
+    position: relative; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px;
+    color: var(--cream-300); text-decoration: none; font-weight: 500; font-size: .9375rem; border-radius: var(--radius);
+    transition: background-color .2s var(--ease);
+  }
+  .nav__links a:hover { background: rgb(240 225 206 / .08); }
+  .nav__links a[aria-current="page"]::after { content: ""; position: absolute; left: 14px; right: 14px; bottom: 6px; height: 2px; background: var(--red-500); }
+  .nav__badge { font-size: .6875rem; text-transform: uppercase; color: var(--red-200); }
+  .nav__toggle { display: none; }
+  .menu { display: none; }
+
+  @media (max-width: 1099px) {
+    .nav__links, .nav__cta { display: none; }
+    .nav__toggle {
+      pointer-events: auto; display: grid; place-items: center; margin-left: auto; width: 48px; height: 48px; color: var(--cream-300);
+      background: transparent; border: 1px solid rgb(240 225 206 / .3); border-radius: var(--radius); cursor: pointer;
+    }
+    .nav__burger { display: grid; gap: 6px; width: 20px; }
+    .nav__burger i { display: block; height: 2px; background: currentColor; transition: transform .35s var(--ease); }
+    .nav__toggle[aria-expanded="true"] .nav__burger i:first-child { transform: translateY(4px) rotate(45deg); }
+    .nav__toggle[aria-expanded="true"] .nav__burger i:last-child { transform: translateY(-4px) rotate(-45deg); }
+    .menu {
+      pointer-events: auto; position: fixed; inset: var(--nav-h) 0 0; display: flex; flex-direction: column; justify-content: space-between;
+      padding: 24px var(--gutter) max(28px, env(safe-area-inset-bottom)); background: var(--navy-900); overflow-y: auto;
+    }
+    .menu[hidden] { display: none; }
+    .menu ul { list-style: none; margin: 0; padding: 0; }
+    .menu li { border-bottom: 1px solid var(--navy-600); animation: menu-in .5s var(--ease) both; animation-delay: calc(var(--i) * 45ms); }
+    .menu li a { display: flex; align-items: center; justify-content: space-between; min-height: 72px; text-decoration: none; color: var(--cream-300); }
+    .menu li a span:first-child { font-family: var(--f-display); font-variation-settings: "wdth" 75, "opsz" 96; font-weight: 760; font-size: clamp(2.2rem, 10vw, 3.4rem); line-height: 1; letter-spacing: -.02em; }
+    .menu li a[aria-current="page"] span:first-child { color: var(--red-300); }
+    .menu__foot { display: grid; gap: 12px; margin-top: 32px; }
+    .menu__foot .btn { width: 100%; }
+  }
+  @media (max-width: 479px) { .nav__sub { display: none; } .nav__brand :global(.nav__logo) { height: 40px; } }
+  @keyframes menu-in { from { opacity: 0; transform: translateY(14px); } }
+</style>
+
+<script>
+  const nav = document.querySelector<HTMLElement>('[data-nav]')!;
+  const btn = nav.querySelector<HTMLButtonElement>('[data-menu-toggle]')!;
+  const menu = nav.querySelector<HTMLElement>('[data-menu]')!;
+  const label = nav.querySelector<HTMLElement>('[data-menu-label]')!;
+  const setOpen = (open: boolean) => {
+    btn.setAttribute('aria-expanded', String(open));
+    label.textContent = open ? 'Close menu' : 'Open menu';
+    menu.hidden = !open;
+    document.documentElement.classList.toggle('menu-open', open);
+    (window as any).__smoother?.paused(open);
+  };
+  btn.addEventListener('click', () => setOpen(btn.getAttribute('aria-expanded') !== 'true'));
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !menu.hidden) { setOpen(false); btn.focus(); } });
+  menu.addEventListener('click', (e) => { if ((e.target as HTMLElement).closest('a')) setOpen(false); });
+  matchMedia('(min-width: 1100px)').addEventListener('change', (e) => { if (e.matches) setOpen(false); });
+</script>

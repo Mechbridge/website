@@ -1,0 +1,18 @@
+---
+// Mechbridge International logo. Inline so it takes the ground's colour (currentColor).
+// variant "full" = bridge + MECHBRIDGE wordmark, "mark" = bridge only.
+import d from '../data/logo-path.txt?raw';
+interface Props { variant?: 'full' | 'mark'; class?: string; title?: string }
+const { variant = 'full', class: cls = '', title = 'Mechbridge International' } = Astro.props;
+const id = `lc-${Math.random().toString(36).slice(2, 8)}`;
+---
+{variant === 'full' ? (
+  <svg class={`logo ${cls}`} viewBox="284 190 1208 508" role="img" aria-label={title} xmlns="http://www.w3.org/2000/svg">
+    <path fill="currentColor" fill-rule="evenodd" d={d.trim()} />
+  </svg>
+) : (
+  <svg class={`logo logo--mark ${cls}`} viewBox="310 190 1155 380" role="img" aria-label={title} xmlns="http://www.w3.org/2000/svg">
+    <defs><clipPath id={id}><rect x="300" y="180" width="1180" height="390" /></clipPath></defs>
+    <path clip-path={`url(#${id})`} fill="currentColor" fill-rule="evenodd" d={d.trim()} />
+  </svg>
+)}

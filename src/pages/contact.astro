@@ -1,0 +1,64 @@
+---
+import Base from '../layouts/Base.astro';
+import ImageSlot from '../components/ImageSlot.astro';
+import EnquiryForm from '../components/EnquiryForm.astro';
+import { site, offices } from '../data/site';
+---
+<Base title="Contact" description="Contact Mechbridge International about a project, training or support. Write to connect@mechbridgegroup.com or support@mechbridgegroup.com.">
+  <section class="ch" data-enter aria-labelledby="ch-h">
+    <div class="wrap grid-12 ch__grid">
+      <div class="ch__copy">
+        <h1 id="ch-h">Talk to an engineer.</h1>
+        <p class="lede" data-enter-item>Projects, training or support: tell us what you need and the right team will reply.</p>
+        <div class="mails" data-enter-item>
+          <a class="mail" href={`mailto:${site.connect}`}>
+            <span class="mono mail__k">Projects and training</span>
+            <span class="mail__v">{site.connect}</span>
+          </a>
+          <a class="mail" href={`mailto:${site.support}`}>
+            <span class="mono mail__k">Support for existing clients</span>
+            <span class="mail__v">{site.support}</span>
+          </a>
+        </div>
+      </div>
+      <div class="ch__form" data-enter-item>
+        <EnquiryForm id="contact-form" topic="consultancy" submit="Send message" />
+      </div>
+    </div>
+  </section>
+
+  <section class="section g-cream theme-cream" aria-labelledby="co-h">
+    <div class="wrap">
+      <h2 id="co-h" class="co__h" data-split>Our offices in Dubai, India and Saudi Arabia.</h2>
+      <ul class="co">
+        {offices.map((o) => (
+          <li>
+            <ImageSlot id={`${o.img}-contact`} ratio="4 / 3" alt={`${o.city} office`} label={`${o.city}: office exterior or street`} />
+            <h3>{o.city}</h3>
+            <p class="mono co__role">{o.role}</p>
+            <p class="body">{o.note}</p>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .ch { background: var(--navy-800); padding: calc(var(--nav-h) + clamp(40px, 6vw, 88px)) 0 clamp(64px, 8vw, 120px); }
+  .ch__grid { align-items: start; }
+  .ch__copy { grid-column: 1 / 6; display: grid; gap: 28px; }
+  .ch__form { grid-column: 7 / 13; }
+  .mails { display: grid; gap: 12px; margin-top: 8px; }
+  .mail { display: grid; gap: 6px; padding: 20px 0; border-top: var(--hair); text-decoration: none; color: var(--cream-300); transition: color .2s; }
+  .mail:last-child { border-bottom: var(--hair); }
+  .mail__k { color: var(--navy-200); font-size: var(--t-micro); text-transform: uppercase; letter-spacing: .1em; }
+  .mail__v { font-family: var(--f-display); font-variation-settings: "wdth" 80, "opsz" 48; font-weight: 700; font-size: clamp(1.3rem, 2.2vw, 2rem); line-height: 1.1; overflow-wrap: anywhere; }
+  .mail:hover .mail__v { color: var(--red-300); }
+
+  .co__h { margin-bottom: clamp(40px, 5vw, 64px); }
+  .co { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+  .co h3 { margin-top: 20px; }
+  .co__role { color: var(--red-500); text-transform: uppercase; letter-spacing: .1em; font-size: var(--t-micro); margin: 6px 0 8px; }
+  @media (max-width: 899px) { .co { grid-template-columns: 1fr; } }
+</style>

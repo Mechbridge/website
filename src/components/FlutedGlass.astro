@@ -1,0 +1,13 @@
+---
+// Nothing OS-style ribbed glass over slowly drifting brand colour. Abstract art, decorative only.
+interface Props { ratio?: string; rib?: number; left?: string; right?: string; class?: string }
+const { ratio = '4 / 5', rib = 22, left, right, class: cls = '' } = Astro.props;
+---
+<div class={`fluted ${cls}`} style={`--ar:${ratio};--rib:${rib}px`} aria-hidden="true">
+  <span class="fluted__blob fluted__blob--a"></span>
+  <span class="fluted__blob fluted__blob--b"></span>
+  <span class="fluted__blob fluted__blob--c"></span>
+  <span class="fluted__ribs"></span>
+  <span class="fluted__grain"></span>
+  {(left || right) && <span class="fluted__label"><span>{left}</span><span>{right}</span></span>}
+</div>
