@@ -16,7 +16,7 @@ if (existsSync('dist/.git')) rmSync('dist/.git', { recursive: true, force: true 
 const git = (cmd) => run(`git ${cmd}`, { cwd: 'dist' });
 git('init -q -b gh-pages');
 git('add -A');
-git(`-c user.name="Mechbridge" -c user.email="connect@mechbridgegroup.com" commit -q -m "Preview build from ${sha}"`);
+git(`commit -q -m "Preview build from ${sha}"`);
 git(`push -f ${remote} gh-pages`);
 rmSync('dist/.git', { recursive: true, force: true });
 console.log('\nPushed. GitHub Pages updates in about a minute: https://mechbridge.github.io/website/');
