@@ -152,7 +152,7 @@ sudo postconf -e "smtpd_tls_cert_file = /etc/letsencrypt/live/mechbridgegroup.co
 sudo postconf -e "smtpd_tls_key_file = /etc/letsencrypt/live/mechbridgegroup.com/privkey.pem"
 sudo postconf -e "smtpd_tls_security_level = may"
 sudo postconf -e "smtp_tls_security_level = may"
-sudo postconf -e "smtpd_tls_mandatory_protocols = !SSLv2, !SSLv3, !TLSv1, !TLSv1.1"
+sudo postconf -e 'smtpd_tls_mandatory_protocols = >=TLSv1.2'
 sudo postconf -e "smtpd_sasl_type = dovecot"
 sudo postconf -e "smtpd_sasl_path = private/auth"
 sudo postconf -e "smtpd_helo_required = yes"
@@ -289,6 +289,7 @@ sudo opendkim-genkey -b 2048 -d mechbridgegroup.com -s mail -D /etc/opendkim/key
 sudo chown -R opendkim:opendkim /etc/opendkim
 sudo tee /etc/opendkim.conf > /dev/null <<'EOF'
 Syslog            yes
+UserID            opendkim
 UMask             007
 Mode              sv
 Canonicalization  relaxed/simple
@@ -305,7 +306,10 @@ sudo cat /etc/opendkim/keys/mechbridgegroup.com/mail.txt
 ```
 The last command prints the DKIM record. In GoDaddy add a **TXT** record:
 - **Name:** `mail._domainkey`
-- **Value:** everything between the quotes joined into one line, starting `v=DKIM1; h=sha256; k=rsa; p=MIIB...` (no quotes, no spaces between the parts).
+- **Value:** everything between the quotes joined into one line, starting `v=DKIM1; h=sha256; k=rsa; p=MIIB...` (no quotes, no spaces between the parts). This prints it ready to copy:
+```bash
+sudo cat /etc/opendkim/keys/mechbridgegroup.com/mail.txt | tr -d '\n' | sed -E 's/^[^(]*\([[:space:]]*//; s/[[:space:]]*\).*$//; s/"[[:space:]]*"//g; s/"//g'; echo
+```
 
 ## Step 7. The website
 
