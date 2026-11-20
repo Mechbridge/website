@@ -12,8 +12,8 @@ EnvironmentFile=/etc/mechbridge.env
 ExecStart=/usr/bin/node --disable-warning=ExperimentalWarning dist/server/entry.mjs
 Restart=always
 RestartSec=3
-# Hardening
-NoNewPrivileges=true
+# Hardening. NoNewPrivileges is off on purpose: the staff portal runs the mailbox tool through
+# one sudo rule (deploy/sudoers-mechbridge), which needs it. /etc and /usr stay read-only.
 ProtectSystem=full
 ProtectHome=true
 ReadWritePaths=/var/lib/mechbridge

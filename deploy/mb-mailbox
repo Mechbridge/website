@@ -1,0 +1,115 @@
+#!/usr/bin/env bash
+# mb-mailbox: manage mechbridgegroup.com mailboxes (Postfix + Dovecot, see GO-LIVE.md Step 6).
+# Install: sudo install -m 0755 -o root -g root deploy/mb-mailbox /usr/local/sbin/mb-mailbox
+#
+#   sudo mb-mailbox list                       # address<TAB>bytes<TAB>created, then "--aliases" and from<TAB>to
+#   sudo mb-mailbox add connect@mechbridgegroup.com      # asks for the password (or reads one line from stdin)
+#   sudo mb-mailbox passwd connect@mechbridgegroup.com   # same
+#   sudo mb-mailbox delete someone@mechbridgegroup.com   # mail is moved to /var/mail/deleted, not erased
+#
+# The website's staff portal calls this through one sudo rule (deploy/sudoers-mechbridge).
+# Passwords never appear on the command line: they come from the terminal or stdin.
+set -euo pipefail
+export LC_ALL=C
+
+DOMAIN="mechbridgegroup.com"
+DB=/var/lib/mailboxes
+USERS="$DB/users"          # Dovecot passwd-file: address:{SHA512-CRYPT}hash:::created::
+VMBOX="$DB/vmailbox"       # Postfix virtual_mailbox_maps (texthash)
+ALIASES=/etc/postfix/virtual
+VHOSTS=/var/mail/vhosts
+TRASH=/var/mail/deleted
+
+die() { echo "ERROR: $*" >&2; exit 1; }
+[[ $EUID -eq 0 ]] || die "Run as root (sudo)."
+
+cmd="${1:-}"
+addr="$(printf '%s' "${2:-}" | tr '[:upper:]' '[:lower:]')"
+local_part="${addr%@*}"
+
+valid_addr() {
+  [[ "$addr" =~ ^[a-z0-9]([a-z0-9._-]{0,62}[a-z0-9])?@mechbridgegroup\.com$ ]] || die "Use a lowercase address ending in @$DOMAIN (letters, numbers, dots, dashes, underscores)."
+  [[ "$local_part" != *..* ]] || die "The address can't contain two dots in a row."
+}
+read_password() {
+  local a b
+  if [[ -t 0 ]]; then
+    read -rsp "Password for $addr: " a; echo >&2
+    read -rsp "Repeat it: " b; echo >&2
+    [[ "$a" == "$b" ]] || die "The passwords don't match."
+  else
+    IFS= read -r a || true
+  fi
+  (( ${#a} >= 12 )) || die "Use a password of at least 12 characters."
+  (( ${#a} <= 128 )) || die "Use a password of 128 characters or fewer."
+  [[ "$a" != *:* ]] || die "The password can't contain a colon."
+  PW="$a"
+}
+exists() { grep -q "^${addr}:" "$USERS"; }
+created_of() { awk -F: -v a="$addr" '$1==a {print $5}' "$USERS"; }
+write_user() { # $1 = created date
+  local hash tmp
+  hash="$(printf '%s\n' "$PW" | openssl passwd -6 -stdin)"
+  tmp="$(mktemp "$DB/.users.XXXXXX")"
+  grep -v "^${addr}:" "$USERS" > "$tmp" || true
+  printf '%s:{SHA512-CRYPT}%s:::%s::\n' "$addr" "$hash" "$1" >> "$tmp"
+  chown root:dovecot "$tmp"; chmod 0640 "$tmp"
+  mv -f "$tmp" "$USERS"
+}
+reload_postfix() { postfix reload >/dev/null 2>&1 || true; }
+
+mkdir -p "$DB"; chmod 0755 "$DB"
+touch "$USERS" "$VMBOX"
+chown root:dovecot "$USERS" 2>/dev/null || true; chmod 0640 "$USERS"; chmod 0644 "$VMBOX"
+exec 9>"$DB/.lock"; flock -w 10 9 || die "Another mailbox change is in progress. Try again."
+
+case "$cmd" in
+  list)
+    while IFS=: read -r a _ _ _ created _; do
+      [[ -n "$a" ]] || continue
+      dir="$VHOSTS/$DOMAIN/${a%@*}"
+      size=0; [[ -d "$dir" ]] && size="$(du -sb "$dir" 2>/dev/null | cut -f1)"
+      printf '%s\t%s\t%s\n' "$a" "${size:-0}" "${created:-}"
+    done < "$USERS"
+    echo "--aliases"
+    [[ -f "$ALIASES" ]] && awk '!/^[[:space:]]*#/ && NF>=2 {print $1 "\t" $2}' "$ALIASES" || true
+    ;;
+  add)
+    valid_addr
+    exists && die "$addr already exists."
+    awk '!/^[[:space:]]*#/ && NF>=2 {print $1}' "$ALIASES" 2>/dev/null | grep -qx "$addr" && die "$addr is already an alias. Remove it from $ALIASES first."
+    read_password
+    write_user "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    grep -q "^${addr} " "$VMBOX" || printf '%s %s/%s/Maildir/\n' "$addr" "$DOMAIN" "$local_part" >> "$VMBOX"
+    mkdir -p "$VHOSTS/$DOMAIN/$local_part"
+    chown -R vmail:vmail "$VHOSTS/$DOMAIN"
+    reload_postfix
+    echo "OK created $addr"
+    ;;
+  passwd)
+    valid_addr
+    exists || die "$addr doesn't exist."
+    read_password
+    write_user "$(created_of)"
+    echo "OK password changed for $addr"
+    ;;
+  delete)
+    valid_addr
+    exists || die "$addr doesn't exist."
+    tmp="$(mktemp "$DB/.users.XXXXXX")"; grep -v "^${addr}:" "$USERS" > "$tmp" || true
+    chown root:dovecot "$tmp"; chmod 0640 "$tmp"; mv -f "$tmp" "$USERS"
+    tmp="$(mktemp "$DB/.vmbox.XXXXXX")"; grep -v "^${addr} " "$VMBOX" > "$tmp" || true
+    chmod 0644 "$tmp"; mv -f "$tmp" "$VMBOX"
+    if [[ -d "$VHOSTS/$DOMAIN/$local_part" ]]; then
+      mkdir -p "$TRASH"; chmod 0700 "$TRASH"
+      mv "$VHOSTS/$DOMAIN/$local_part" "$TRASH/${addr}-$(date -u +%Y%m%d-%H%M%S)"
+    fi
+    doveadm kick "$addr" >/dev/null 2>&1 || true
+    reload_postfix
+    echo "OK deleted $addr (mail kept in $TRASH)"
+    ;;
+  *)
+    echo "Usage: mb-mailbox list | add <address> | passwd <address> | delete <address>" >&2
+    exit 2
+    ;;
+esac

@@ -6,8 +6,9 @@ import { randomBytes } from 'node:crypto';
 import { dataDir, MIN_PASSWORD } from './core.mjs';
 import * as D from './db';
 import { notifyLead } from './notify';
+import { MailError, listMailboxes, createMailbox, setMailboxPassword, deleteMailbox } from './mail';
 import type { LeadType, LeadFilter, LeadStatus, LeadUpdate, PostingKind, Role, User, PostingInput, CertificateInput } from '../lib/api/types';
-import { canManageCertificates, canManageUsers, leadTypesFor, postingKindsFor, LEAD_TYPE_LABELS, LEAD_STATUSES } from '../lib/roles';
+import { canManageCertificates, canManageMailboxes, canManageUsers, leadTypesFor, postingKindsFor, LEAD_TYPE_LABELS, LEAD_STATUSES } from '../lib/roles';
 
 export const prerender = false;
 
@@ -355,6 +356,35 @@ async function handle(ctx: APIContext, parts: string[], method: string): Promise
         const pw = x.password ? String(x.password) : undefined;
         if (pw && pw.length < MIN_PASSWORD) fail(400, `Use at least ${MIN_PASSWORD} characters.`);
         return json(D.updateUser(id, { name: x.name === undefined ? undefined : str(x.name, 120), role, active, password: pw }));
+      }
+    }
+
+    if (b === 'mailboxes') {
+      need(canManageMailboxes(u.role));
+      if (method !== 'GET') limit('mail:' + u.id, 30, 10 * 60_000);
+      const address = c ? decodeURIComponent(c) : '';
+      try {
+        if (!c && method === 'GET') return json(await listMailboxes());
+        if (!c && method === 'POST') {
+          const x = await body(ctx);
+          const made = await createMailbox(str(x.local ?? x.address, 200), x.password);
+          console.log(`[mail] ${u.email} created ${made}`);
+          return json({ ok: true, address: made }, 201);
+        }
+        if (c && d === 'password' && method === 'POST') {
+          const x = await body(ctx);
+          const done = await setMailboxPassword(address, x.password);
+          console.log(`[mail] ${u.email} reset the password of ${done}`);
+          return json({ ok: true, address: done });
+        }
+        if (c && !d && method === 'DELETE') {
+          const gone = await deleteMailbox(address);
+          console.log(`[mail] ${u.email} deleted ${gone}`);
+          return json({ ok: true, address: gone });
+        }
+      } catch (e) {
+        if (e instanceof MailError) fail(e.status, e.message);
+        throw e;
       }
     }
   }

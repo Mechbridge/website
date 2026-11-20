@@ -18,6 +18,13 @@ Time needed: about 2 hours of work, plus up to a few hours of waiting for DNS to
 
 Commands go into **PuTTY** one block at a time. Lines starting with `#` are comments. Use **WinSCP** if you'd rather edit a file in a window than in `nano`.
 
+> **Website already live, adding mail now?** Do these parts, in this order:
+> 1. Step 1: the `mail` A record, MX, SPF and DMARC rows. Step 2: the PTR.
+> 2. Step 3: the firewall line for the mail ports and the port 25 check.
+> 3. Step 5: expand the certificate to include `mail.` (command in Step 5).
+> 4. Step 6 in full, then **Step 7.1** (update the website, install the mailbox tool, create mailboxes).
+> 5. Steps 8, 9 (the webmail part) and 10.
+
 ---
 
 ## Step 1. DNS at GoDaddy (do this first; it needs time to spread)
@@ -100,6 +107,13 @@ sudo apt install -y nginx certbot python3-certbot-nginx sqlite3 git
 ```bash
 sudo certbot certonly --nginx -d mechbridgegroup.com -d www.mechbridgegroup.com -d mail.mechbridgegroup.com --agree-tos -m connect@mechbridgegroup.com --no-eff-email
 ```
+If the website already has a certificate without `mail.`, add the mail name to it instead:
+```bash
+sudo certbot certonly --nginx --expand --cert-name mechbridgegroup.com -d mechbridgegroup.com -d www.mechbridgegroup.com -d mail.mechbridgegroup.com
+sudo certbot certificates
+```
+The second command should list all three names under `mechbridgegroup.com`, with files in `/etc/letsencrypt/live/mechbridgegroup.com/`. If the folder has another name (for example `mechbridgegroup.com-0001`), use that name in the Postfix, Dovecot and nginx settings below.
+
 If certbot says a name doesn't resolve, wait for DNS (Step 1) and run it again. Renewal is automatic. Check it with:
 ```bash
 sudo certbot renew --dry-run
@@ -131,7 +145,7 @@ sudo postconf -e "inet_interfaces = all"
 sudo postconf -e "inet_protocols = ipv4"
 sudo postconf -e "message_size_limit = 26214400"
 sudo postconf -e "virtual_mailbox_domains = mechbridgegroup.com"
-sudo postconf -e "virtual_mailbox_maps = texthash:/etc/postfix/vmailbox"
+sudo postconf -e "virtual_mailbox_maps = texthash:/var/lib/mailboxes/vmailbox"
 sudo postconf -e "virtual_alias_maps = texthash:/etc/postfix/virtual"
 sudo postconf -e "virtual_transport = lmtp:unix:private/dovecot-lmtp"
 sudo postconf -e "smtpd_tls_cert_file = /etc/letsencrypt/live/mechbridgegroup.com/fullchain.pem"
@@ -164,7 +178,13 @@ abuse@mechbridgegroup.com       connect@mechbridgegroup.com
 no-reply@mechbridgegroup.com    connect@mechbridgegroup.com
 info@mechbridgegroup.com        connect@mechbridgegroup.com
 EOF
-sudo touch /etc/postfix/vmailbox
+```
+
+The mailbox list and passwords live in `/var/lib/mailboxes` (the mailbox tool in Step 7.1 and the staff portal manage them):
+```bash
+sudo mkdir -p /var/lib/mailboxes && sudo chmod 755 /var/lib/mailboxes
+sudo touch /var/lib/mailboxes/vmailbox /var/lib/mailboxes/users
+sudo chmod 644 /var/lib/mailboxes/vmailbox
 ```
 
 ### 6.4 Dovecot
@@ -189,7 +209,7 @@ auth_mechanisms = plain login
 auth_username_format = %{user | lower}
 
 passdb passwd-file {
-  passwd_file_path = /etc/dovecot/users
+  passwd_file_path = /var/lib/mailboxes/users
 }
 userdb static {
   fields {
@@ -252,7 +272,7 @@ service auth {
 
 log_path = syslog
 EOF
-sudo touch /etc/dovecot/users && sudo chown root:dovecot /etc/dovecot/users && sudo chmod 640 /etc/dovecot/users
+sudo chown root:dovecot /var/lib/mailboxes/users && sudo chmod 640 /var/lib/mailboxes/users
 sudo doveconf -n > /dev/null && echo "Dovecot config OK"
 ```
 If `doveconf` prints an error, copy it to the developer before going on.
@@ -332,17 +352,51 @@ curl -sI http://127.0.0.1:4321 | head -1
 ```
 The last line should say `HTTP/1.1 200 OK`.
 
-### 7.1 Create the mailboxes
+### 7.1 Mailbox tool, staff portal access and the first mailboxes
 
-The helper script comes with the website code you just cloned:
+If the website was already running before mail, update it first and add the mail lines to its settings:
 ```bash
 cd /var/www/mechbridge
-sudo bash deploy/mail-adduser.sh connect@mechbridgegroup.com
-sudo bash deploy/mail-adduser.sh support@mechbridgegroup.com
-sudo bash deploy/mail-adduser.sh careers@mechbridgegroup.com
-sudo bash deploy/mail-adduser.sh intern@mechbridgegroup.com
+sudo -u mechbridge git pull --recurse-submodules
+sudo -u mechbridge npm ci
+sudo -u mechbridge npm run build
+grep -q SMTP_HOST /etc/mechbridge.env || sudo tee -a /etc/mechbridge.env > /dev/null <<'EOF'
+SMTP_HOST=127.0.0.1
+SMTP_PORT=25
+SMTP_SECURE=false
+SMTP_FROM=Mechbridge website <no-reply@mechbridgegroup.com>
+LEAD_NOTIFY_TO=connect@mechbridgegroup.com
+SUPPORT_NOTIFY_TO=support@mechbridgegroup.com
+CAREERS_NOTIFY_TO=careers@mechbridgegroup.com
+INTERN_NOTIFY_TO=intern@mechbridgegroup.com
+EOF
 ```
-Each one asks for a password (12+ characters). Store them in a password manager. Run the same command later to reset a password or to add another address (for example `yourname@mechbridgegroup.com`).
+
+Install the mailbox tool, the one sudo rule that lets the website use it, and the updated service file:
+```bash
+cd /var/www/mechbridge
+sudo install -m 0755 -o root -g root deploy/mb-mailbox /usr/local/sbin/mb-mailbox
+sudo install -m 0440 -o root -g root deploy/sudoers-mechbridge /etc/sudoers.d/mechbridge
+sudo visudo -c
+sudo cp deploy/mechbridge.service /etc/systemd/system/
+sudo systemctl daemon-reload && sudo systemctl restart mechbridge
+```
+`visudo -c` must end with "parsed OK". If it doesn't, run `sudo rm /etc/sudoers.d/mechbridge` and tell the developer.
+
+Create the four mailboxes the website sends alerts to. Each asks for a password twice (12+ characters, no colon). Store them in a password manager:
+```bash
+sudo mb-mailbox add connect@mechbridgegroup.com
+sudo mb-mailbox add support@mechbridgegroup.com
+sudo mb-mailbox add careers@mechbridgegroup.com
+sudo mb-mailbox add intern@mechbridgegroup.com
+sudo mb-mailbox list
+```
+
+From now on, manage mailboxes in the **staff portal → Mailboxes** (superadmin only): create a mailbox, reset a password or delete one. The same tool works in PuTTY: `sudo mb-mailbox passwd name@mechbridgegroup.com`, `sudo mb-mailbox delete name@mechbridgegroup.com`. Deleted mailboxes' mail is moved to `/var/mail/deleted`, not erased.
+
+Forwarding addresses (postmaster@, info@ and the rest) stay in `/etc/postfix/virtual`. After editing that file run `sudo postfix reload`.
+
+Send a test lead alert: submit the contact form on the website, then check connect@ in webmail (Step 8). The alert is a navy and cream branded email with a button that opens the lead in the staff portal. If it doesn't arrive, look in `sudo tail -n 50 /var/log/mail.log` and `sudo journalctl -u mechbridge -n 50`.
 
 ## Step 8. Roundcube webmail
 
@@ -417,7 +471,7 @@ After two weeks of clean DMARC reports (they arrive at postmaster@ → connect@)
 ```bash
 # Nightly backups of the website data and the mailboxes (02:15)
 sudo mkdir -p /var/backups/mechbridge
-( sudo crontab -l 2>/dev/null; echo '15 2 * * * DATA_DIR=/var/lib/mechbridge /var/www/mechbridge/deploy/backup.sh && tar -czf /var/backups/mechbridge/mail-$(date +\%F).tar.gz -C /var/mail vhosts && find /var/backups/mechbridge -name "mail-*" -mtime +14 -delete' ) | sudo crontab -
+( sudo crontab -l 2>/dev/null; echo '15 2 * * * DATA_DIR=/var/lib/mechbridge /var/www/mechbridge/deploy/backup.sh && tar -czf /var/backups/mechbridge/mail-$(date +\%F).tar.gz -C / var/mail/vhosts var/lib/mailboxes && find /var/backups/mechbridge -name "mail-*" -mtime +14 -delete' ) | sudo crontab -
 ```
 Copy `/var/backups/mechbridge/` off the server now and then with WinSCP (or enable OVH's automated backup / snapshot option for the VPS).
 
@@ -460,4 +514,5 @@ The database upgrades itself on restart.
 | Mail not arriving or sending | `sudo tail -n 100 /var/log/mail.log` |
 | Mail queue | `sudo postqueue -p` (flush with `sudo postqueue -f`) |
 | Webmail login fails | `sudo tail -n 50 /var/lib/roundcube/logs/errors.log` and `sudo journalctl -u dovecot -n 50` |
+| Portal says mail management isn't connected | `ls -l /usr/local/sbin/mb-mailbox /etc/sudoers.d/mechbridge`, then `sudo -u mechbridge sudo -n /usr/local/sbin/mb-mailbox list` (must list mailboxes, not ask for a password) |
 | Certificate | `sudo certbot certificates` |

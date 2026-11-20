@@ -4,8 +4,9 @@ import type { Api } from './client';
 import { ApiError } from './errors';
 import type {
   CertFilter, Certificate, Lead, LeadEvent, LeadFilter, LeadPage, LeadStatus, LeadType, LeadUpdate,
-  Posting, PostingFilter, PostingKind, PostingPage, Role, User,
+  MailboxList, Posting, PostingFilter, PostingKind, PostingPage, Role, User,
 } from './types';
+import { CORE_MAILBOXES, MAIL_DOMAIN, mailAddress, mailAddressError, mailPasswordError, canManageMailboxes } from '../roles';
 import { LEAD_STATUSES, canManageCertificates, canManageUsers, leadTypesFor, newCertificateCode, normaliseCode, postingKindsFor, slugify } from '../roles';
 
 const KEY = 'mb-demo-v4';
@@ -359,4 +360,43 @@ export const demoApi: Api = {
     if (x.name !== undefined) r!.name = x.name; if (x.role) r!.role = x.role; if (x.active !== undefined) r!.active = x.active;
     save(s); return clone(r!);
   },
+
+  // Mailboxes: kept in their own key so the main demo store doesn't need a version bump.
+  async mailboxes() {
+    await tick(); need(canManageMailboxes(current(load()).role));
+    return clone(mailLoad());
+  },
+  async createMailbox(local, password) {
+    await tick(); need(canManageMailboxes(current(load()).role));
+    const address = mailAddress(local), m = mailLoad();
+    const e = mailAddressError(address) || mailPasswordError(password); if (e) fail(400, e);
+    if (m.mailboxes.some((x) => x.address === address)) fail(409, `${address} already exists.`);
+    if (m.aliases.some((x) => x.from === address)) fail(409, `${address} is already an alias.`);
+    m.mailboxes.push({ address, size_bytes: 0, created: new Date().toISOString(), core: false });
+    m.mailboxes.sort((a, b) => a.address.localeCompare(b.address)); mailSave(m); return address;
+  },
+  async setMailboxPassword(address, password) {
+    await tick(); need(canManageMailboxes(current(load()).role));
+    const e = mailPasswordError(password); if (e) fail(400, e);
+    if (!mailLoad().mailboxes.some((x) => x.address === address)) fail(404, `${address} doesn't exist.`);
+  },
+  async deleteMailbox(address) {
+    await tick(); need(canManageMailboxes(current(load()).role));
+    const m = mailLoad();
+    if (!m.mailboxes.some((x) => x.address === address)) fail(404, `${address} doesn't exist.`);
+    m.mailboxes = m.mailboxes.filter((x) => x.address !== address); mailSave(m);
+  },
 };
+
+const MAIL_KEY = 'mb-demo-mail-v1';
+function mailLoad(): MailboxList {
+  try { const raw = localStorage.getItem(MAIL_KEY); if (raw) return JSON.parse(raw); } catch { /* storage blocked: fall back to the seed */ }
+  const t = ago(120);
+  const sizes: Record<string, number> = { connect: 48_200_000, support: 6_900_000, careers: 21_400_000, intern: 13_100_000 };
+  return {
+    available: true, mode: 'demo', domain: MAIL_DOMAIN, webmail: `https://mail.${MAIL_DOMAIN}`,
+    mailboxes: CORE_MAILBOXES.map((l) => ({ address: `${l}@${MAIL_DOMAIN}`, size_bytes: sizes[l] ?? 0, created: t.replace(' ', 'T') + 'Z', core: true })),
+    aliases: ['postmaster', 'abuse', 'info'].map((l) => ({ from: `${l}@${MAIL_DOMAIN}`, to: `connect@${MAIL_DOMAIN}` })),
+  };
+}
+const mailSave = (m: MailboxList) => { try { localStorage.setItem(MAIL_KEY, JSON.stringify(m)); } catch { /* ignore */ } };

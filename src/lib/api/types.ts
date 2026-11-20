@@ -113,3 +113,8 @@ export interface PostingPage extends Paged<Posting> { counts: Record<PostingStat
 export interface CertFilter extends PageQuery { q?: string; programme?: Programme | ''; status?: CertStatus | ''; from?: string; to?: string; ids?: number[] }
 export interface CertPage extends Paged<Certificate> { counts: Record<CertStatus | 'all', number> }
 export const PAGE_SIZES = [25, 50, 100] as const;
+
+// Mailboxes on the mail server (staff portal, superadmin only).
+export interface Mailbox { address: string; size_bytes: number; created: string; core: boolean } // core = used by the website forms
+export interface MailAlias { from: string; to: string }
+export interface MailboxList { available: boolean; mode: 'server' | 'mock' | 'off' | 'demo'; domain: string; webmail: string; mailboxes: Mailbox[]; aliases: MailAlias[] }

@@ -79,3 +79,21 @@ export const LEAD_STATUS_NOTES: Record<(typeof LEAD_STATUSES)[number], string> =
   converted: 'Became a project, enrolment or hire',
   closed: 'No further action',
 };
+
+// Mail server
+export const MAIL_DOMAIN = 'mechbridgegroup.com';
+export const CORE_MAILBOXES = ['connect', 'support', 'careers', 'intern']; // the website sends lead alerts to these
+export const canManageMailboxes = (role: Role) => role === 'superadmin';
+// Shared checks (server, demo store and the portal form). Return an error message, or '' when fine.
+export const mailAddress = (input: string) => { const r = String(input ?? '').trim().toLowerCase(); return r.includes('@') ? r : `${r}@${MAIL_DOMAIN}`; };
+export function mailAddressError(address: string) {
+  const local = address.split('@')[0];
+  return address.endsWith(`@${MAIL_DOMAIN}`) && /^[a-z0-9]([a-z0-9._-]{0,62}[a-z0-9])?$/.test(local) && !local.includes('..') ? ''
+    : `Use letters, numbers, dots, dashes or underscores before @${MAIL_DOMAIN}, with no dot at the start or end.`;
+}
+export function mailPasswordError(pw: string) {
+  if (pw.length < 12) return 'Use a password of at least 12 characters.';
+  if (pw.length > 128) return 'Use a password of 128 characters or fewer.';
+  if (/[:\n\r]/.test(pw)) return "The password can't contain a colon or a line break.";
+  return '';
+}

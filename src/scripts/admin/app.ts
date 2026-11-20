@@ -1,15 +1,16 @@
-// Mechbridge staff portal. Hash routes: #/ #/leads #/job #/internship #/training #/certificates #/users #/account
+// Mechbridge staff portal. Hash routes: #/ #/leads #/job #/internship #/training #/certificates #/mailboxes #/users #/account
 // Filters live in the hash query (#/leads?status=new&page=2) so views survive a refresh and can be shared.
 // Lists are paged on the server. Text from the database is only ever set with textContent.
 import { api, ApiError } from '../../lib/api/client';
 import { DEMO_ACCOUNTS, DEMO_PASSWORD, resetDemo } from '../../lib/api/demo';
 import type {
-  Certificate, Lead, LeadFilter, LeadStatus, LeadType, Posting, PostingKind, PostingStatus, StaffRef, User,
+  Certificate, Lead, LeadFilter, LeadStatus, LeadType, MailboxList, Posting, PostingKind, PostingStatus, StaffRef, User,
 } from '../../lib/api/types';
 import { PAGE_SIZES } from '../../lib/api/types';
 import {
   ROLE_LABELS, ROLE_NOTES, LEAD_TYPE_LABELS, POSTING_LABELS, LEAD_STATUSES, LEAD_STATUS_LABELS, LEAD_STATUS_NOTES,
-  leadTypesFor, postingKindsFor, canManageCertificates, canManageUsers, canSeeLeads,
+  leadTypesFor, postingKindsFor, canManageCertificates, canManageUsers, canSeeLeads, canManageMailboxes,
+  mailAddress, mailAddressError, mailPasswordError,
 } from '../../lib/roles';
 import { u } from '../../lib/url';
 
@@ -151,6 +152,7 @@ function navFor(user: User): NavEntry[] {
     { hash: 'internship', label: 'Internships', show: kinds.includes('internship') },
     { hash: 'training', label: 'Training batches', show: kinds.includes('training') },
     { hash: 'certificates', label: 'Certificates', show: canManageCertificates(user.role) },
+    { hash: 'mailboxes', label: 'Mailboxes', show: canManageMailboxes(user.role) },
     { hash: 'users', label: 'Staff accounts', show: canManageUsers(user.role) },
     { hash: 'account', label: 'My account', show: true },
   ].filter((n) => n.show);
@@ -180,7 +182,7 @@ function renderShell() {
   main.append(view);
   const views: Record<string, (el: HTMLElement) => Promise<void> | void> = {
     '': overview, leads, job: (el) => postings(el, 'job'), internship: (el) => postings(el, 'internship'), training: (el) => postings(el, 'training'),
-    certificates, users, account,
+    certificates, mailboxes, users, account,
   };
   Promise.resolve(views[r](view)).catch(handleErr(view));
 }
@@ -475,6 +477,8 @@ async function leads(el: HTMLElement) {
   }
 
   await go();
+  // Deep link from the alert email: #/leads?open=<id> opens that lead.
+  if (Number(q.open)) leadSheet(Number(q.open), () => go()).catch((e) => toast(errMsg(e), true));
 }
 
 async function leadSheet(leadId: number, reload: () => Promise<void> | void) {
@@ -841,6 +845,183 @@ function userSheet(reload: () => Promise<void> | void) {
     catch (e) { err.textContent = errMsg(e); } finally { save.removeAttribute('aria-busy'); }
   });
   name.focus();
+}
+
+/* ================= mailboxes (superadmin) ================= */
+const fmtBytes = (n: number) => (n < 1024 ? `${n} B` : n < 1024 ** 2 ? `${(n / 1024).toFixed(0)} KB` : n < 1024 ** 3 ? `${(n / 1024 ** 2).toFixed(1)} MB` : `${(n / 1024 ** 3).toFixed(2)} GB`);
+// 16 random characters in groups of four, without look-alikes (0/O, 1/l/I) or a colon.
+function newMailPassword() {
+  const abc = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+  const r = crypto.getRandomValues(new Uint32Array(16));
+  return Array.from(r, (n, i) => (i && i % 4 === 0 ? '-' : '') + abc[n % abc.length]).join('');
+}
+async function copyText(text: string, what = 'Copied') {
+  try { await navigator.clipboard.writeText(text); toast(what); }
+  catch { toast('Copy failed. Select the text and copy it by hand.', true); }
+}
+// Password input with show, generate and copy. Starts with a generated password.
+function passwordField(label: string) {
+  const input = h('input', { id: id(), type: 'text', autocomplete: 'new-password', spellcheck: 'false', class: 'mono', value: newMailPassword() });
+  const show = h('button', { class: 'btn btn--quiet btn--xs', type: 'button' }, 'Hide');
+  show.addEventListener('click', () => { const hidden = input.type === 'password'; input.type = hidden ? 'text' : 'password'; show.textContent = hidden ? 'Hide' : 'Show'; });
+  const gen = h('button', { class: 'btn btn--quiet btn--xs', type: 'button', onclick: () => { input.value = newMailPassword(); input.type = 'text'; show.textContent = 'Hide'; } }, 'New password');
+  const copy = h('button', { class: 'btn btn--quiet btn--xs', type: 'button', onclick: () => copyText(input.value, 'Password copied') }, 'Copy');
+  const tools = h('div', { class: 'adm-pw__tools' }, gen, show, copy);
+  const el = h('div', { class: 'field' }, h('label', { for: input.id }, label), input, tools,
+    h('p', { class: 'adm-hint' }, '12 to 128 characters, no colon. The generated one is strong, so keep it unless you need your own.'));
+  // Once saved, the handover box takes over: lock the field.
+  const lock = () => { input.disabled = true; tools.remove(); el.querySelector('.adm-hint')?.remove(); };
+  return { el, input, lock };
+}
+// After a create or reset: the details to hand over. The portal never shows the password again.
+function handover(box: HTMLElement, address: string, password: string, webmail: string, domain: string) {
+  const text = `Mechbridge email\nAddress: ${address}\nPassword: ${password}\nWebmail: ${webmail}\nIncoming (IMAP): mail.${domain}, port 993, SSL/TLS\nOutgoing (SMTP): mail.${domain}, port 587, STARTTLS\nUsername: ${address}`;
+  box.replaceChildren(h('div', { class: 'adm-handover' },
+    h('p', {}, h('b', {}, 'Share these details privately.'), ' This is the only time the portal shows this password. If it gets lost, reset it here.'),
+    h('dl', { class: 'adm-dl' }, h('dt', {}, 'Address'), h('dd', { class: 'mono' }, address), h('dt', {}, 'Password'), h('dd', { class: 'mono' }, password), h('dt', {}, 'Webmail'), h('dd', {}, webmail)),
+    h('div', {}, h('button', { class: 'btn btn--sm', type: 'button', onclick: () => copyText(text, 'Login details copied') }, 'Copy login details')),
+  ));
+}
+
+async function mailboxes(el: HTMLElement) {
+  const q = readQuery();
+  const st = { q: q.q ?? '' };
+  const add = h('button', { class: 'btn btn--sm', type: 'button' }, 'Create a mailbox');
+  const webmailLink = h('a', { class: 'btn btn--quiet btn--sm', href: '#', target: '_blank', rel: 'noopener' }, 'Open webmail');
+  el.append(head('Mailboxes', 'Email accounts on @mechbridgegroup.com. Create them, reset passwords and remove them here.', webmailLink, add));
+  const note = h('div', {}), filters = h('div', { class: 'adm-filters' }), wrap = h('div', { class: 'adm-table-wrap' }), aliasBox = h('div', {}), settings = h('div', {});
+  el.append(note, filters, wrap, aliasBox, settings);
+  const fQ = h('input', { id: id(), type: 'search', placeholder: 'Address…', value: st.q });
+  filters.append(h('div', { class: 'adm-filters__q' }, field('Search', fQ)));
+  fQ.addEventListener('input', () => { st.q = fQ.value.trim().toLowerCase(); draw(); });
+
+  let data: MailboxList;
+  async function load() { data = await api.mailboxes(); draw(); }
+  add.addEventListener('click', () => mailboxSheet(data, load));
+
+  function draw() {
+    writeQuery(st);
+    webmailLink.setAttribute('href', data.webmail);
+    const notice = (warn: boolean, title: string, text: string) => h('div', { class: `adm-notice ${warn ? 'adm-notice--warn' : ''}` }, h('b', {}, title), h('p', {}, text));
+    note.replaceChildren(...[
+      !data.available ? notice(true, 'Mail management isn’t connected on this server yet.', 'Install the mailbox tool and its sudo rule (GO-LIVE.md, step 7.1), then reload this page.')
+        : data.mode === 'mock' ? notice(false, 'Local test mode.', 'This computer has no mail server, so changes go to a test file only. On the live server they change real mailboxes.')
+        : data.mode === 'demo' ? notice(false, 'Demo.', 'These mailboxes are samples saved in this browser. Nothing reaches a mail server.') : null,
+    ].filter(Boolean) as Node[]);
+    add.toggleAttribute('disabled', !data.available);
+    const list = data.mailboxes.filter((m) => !st.q || m.address.includes(st.q));
+    if (!data.available) wrap.replaceChildren(h('p', { class: 'adm-empty' }, 'The mailbox list appears once the mail server is connected.'));
+    else if (!list.length) wrap.replaceChildren(h('p', { class: 'adm-empty' }, st.q ? 'No mailboxes match.' : 'No mailboxes yet. Create the first one.'));
+    else {
+      const tbody = h('tbody', {});
+      for (const m of list) {
+        tbody.append(h('tr', {},
+          h('td', {}, h('b', { class: 'mono' }, m.address), m.core ? h('div', { class: 'muted' }, 'Website alerts arrive here') : null),
+          h('td', { class: 'muted nowrap' }, fmtBytes(m.size_bytes)),
+          h('td', { class: 'muted nowrap', title: fmtTime(m.created) }, m.created ? fmt(m.created) : 'Before the portal'),
+          h('td', { class: 'actions' },
+            h('button', { class: 'btn btn--quiet btn--xs', type: 'button', onclick: () => passwordSheet(data, m.address) }, 'Reset password'),
+            h('button', { class: 'btn btn--danger btn--xs', type: 'button', onclick: () => deleteMailboxSheet(m.address, m.core, load) }, 'Delete'),
+          ),
+        ));
+      }
+      const total = data.mailboxes.reduce((n, m) => n + m.size_bytes, 0);
+      wrap.replaceChildren(tableEl(['Address', 'Storage', 'Created', ''], tbody), h('p', { class: 'adm-table-foot' }, `${plural(data.mailboxes.length, 'mailbox', 'mailboxes')} · ${fmtBytes(total)} stored`));
+    }
+    aliasBox.replaceChildren(...(data.aliases.length ? [
+      h('h2', { class: 'adm-sub' }, 'Forwarding addresses'),
+      h('p', { class: 'adm-hint', style: 'margin-bottom:10px' }, 'These addresses have no mailbox of their own. Their mail is delivered to another address. They are set on the server in /etc/postfix/virtual.'),
+      h('div', { class: 'adm-table-wrap' }, tableEl(['Address', 'Delivered to'], h('tbody', {}, ...data.aliases.map((a) => h('tr', {}, h('td', { class: 'mono' }, a.from), h('td', { class: 'mono muted' }, a.to)))))),
+    ] : []));
+    const card = (label: string, value: Node | string, hint: string) => h('div', { class: 'adm-card' }, h('span', {}, label), typeof value === 'string' ? h('p', { class: 'mono' }, value) : value, h('p', { class: 'adm-hint' }, hint));
+    settings.replaceChildren(
+      h('h2', { class: 'adm-sub' }, 'Settings for mail apps'),
+      h('div', { class: 'adm-cards adm-mailset' },
+        card('Webmail', h('a', { class: 'link mono', href: data.webmail, target: '_blank', rel: 'noopener' }, data.webmail.replace('https://', '')), 'Log in with the full address and its password.'),
+        card('Incoming (IMAP)', `mail.${data.domain}`, 'Port 993, SSL/TLS'),
+        card('Outgoing (SMTP)', `mail.${data.domain}`, 'Port 587, STARTTLS, with login'),
+        card('Username', 'The full address', 'On phones, choose IMAP, not POP or Exchange.'),
+      ),
+    );
+  }
+  await load();
+}
+
+function mailboxSheet(data: MailboxList, reload: () => Promise<void>) {
+  const local = h('input', { id: id(), autocomplete: 'off', spellcheck: 'false', placeholder: 'firstname.lastname', class: 'mono' });
+  const pw = passwordField('Password');
+  const err = h('p', { class: 'adm-error', role: 'alert' });
+  const out = h('div', {});
+  const save = h('button', { class: 'btn btn--sm', type: 'button' }, 'Create mailbox');
+  const cancel = h('button', { class: 'btn btn--quiet btn--sm', type: 'button', onclick: () => s.close() }, 'Cancel');
+  const s = sheet('Create a mailbox', [
+    h('div', { class: 'field' }, h('label', { for: local.id }, 'Address'),
+      h('div', { class: 'adm-addr' }, local, h('span', { class: 'adm-addr__at mono' }, `@${data.domain}`)),
+      h('p', { class: 'adm-hint' }, 'Lowercase letters, numbers, dots, dashes or underscores. Works for a person (firstname@) or a role (accounts@).')),
+    pw.el, err, out,
+  ], [cancel, save]);
+  local.addEventListener('input', () => { local.value = local.value.toLowerCase().replace(/@.*$/, '').replace(/\s/g, ''); err.textContent = ''; });
+  local.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); save.click(); } });
+  save.addEventListener('click', async () => {
+    err.textContent = '';
+    const address = mailAddress(local.value), password = pw.input.value;
+    const problem = (!local.value ? 'Type the part before the @.' : mailAddressError(address)) || mailPasswordError(password);
+    if (problem) { err.textContent = problem; return; }
+    save.setAttribute('aria-busy', 'true');
+    try {
+      const made = await api.createMailbox(local.value, password);
+      toast(`${made} created`);
+      handover(out, made, password, data.webmail, data.domain);
+      local.disabled = true; pw.lock(); save.remove(); cancel.textContent = 'Done';
+      await reload();
+    } catch (e) { err.textContent = errMsg(e); } finally { save.removeAttribute('aria-busy'); }
+  });
+  local.focus();
+}
+
+function passwordSheet(data: MailboxList, address: string) {
+  const pw = passwordField('New password');
+  const err = h('p', { class: 'adm-error', role: 'alert' });
+  const out = h('div', {});
+  const save = h('button', { class: 'btn btn--sm', type: 'button' }, 'Set new password');
+  const cancel = h('button', { class: 'btn btn--quiet btn--sm', type: 'button', onclick: () => s.close() }, 'Cancel');
+  const s = sheet('Reset password', [
+    h('p', {}, 'For ', h('b', { class: 'mono' }, address), '. The old password stops working straight away. Phones and mail apps using it will ask for the new one.'),
+    pw.el, err, out,
+  ], [cancel, save]);
+  save.addEventListener('click', async () => {
+    err.textContent = '';
+    const password = pw.input.value, problem = mailPasswordError(password);
+    if (problem) { err.textContent = problem; return; }
+    save.setAttribute('aria-busy', 'true');
+    try {
+      await api.setMailboxPassword(address, password);
+      toast('Password changed');
+      handover(out, address, password, data.webmail, data.domain);
+      pw.lock(); save.remove(); cancel.textContent = 'Done';
+    } catch (e) { err.textContent = errMsg(e); } finally { save.removeAttribute('aria-busy'); }
+  });
+}
+
+function deleteMailboxSheet(address: string, core: boolean, reload: () => Promise<void>) {
+  const confirmIn = h('input', { id: id(), autocomplete: 'off', spellcheck: 'false', class: 'mono', placeholder: address });
+  const err = h('p', { class: 'adm-error', role: 'alert' });
+  const del = h('button', { class: 'btn btn--danger btn--sm', type: 'button', disabled: true }, 'Delete mailbox');
+  const s = sheet('Delete a mailbox', [
+    h('p', {}, 'Deleting ', h('b', { class: 'mono' }, address), ' signs it out everywhere. Mail sent to it afterwards bounces back to the sender.'),
+    core ? h('div', { class: 'adm-notice adm-notice--warn' }, h('b', {}, 'The website sends lead alerts to this address.'), h('p', {}, 'Alerts will fail until you recreate it or point the website at another address in /etc/mechbridge.env. Leads are still saved in the portal.')) : null,
+    h('p', { class: 'adm-hint' }, 'Stored mail is moved to /var/mail/deleted on the server, not erased, so the server administrator can recover it.'),
+    field(`Type ${address} to confirm`, confirmIn),
+    err,
+  ].filter(Boolean) as Node[], [h('button', { class: 'btn btn--quiet btn--sm', type: 'button', onclick: () => s.close() }, 'Cancel'), del]);
+  confirmIn.addEventListener('input', () => { del.toggleAttribute('disabled', confirmIn.value.trim().toLowerCase() !== address); });
+  del.addEventListener('click', async () => {
+    err.textContent = '';
+    del.setAttribute('aria-busy', 'true');
+    try { await api.deleteMailbox(address); toast(`${address} deleted`); s.close(); await reload(); }
+    catch (e) { err.textContent = errMsg(e); } finally { del.removeAttribute('aria-busy'); }
+  });
+  confirmIn.focus();
 }
 
 /* ================= account ================= */
