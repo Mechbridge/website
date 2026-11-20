@@ -74,7 +74,9 @@ import { site } from '../data/site';
         tb.append(
           row('Code', r.code!), row('Issued to', r.holder_name!),
           row('Programme', r.programme === 'internship' ? 'Internship' : 'Professional training'),
-          row('Title', r.title!), row('Issued on', fmtDate(r.issue_date!)),
+          row('Title', r.title!),
+          ...(r.period_from || r.period_to ? [row('Period', [r.period_from, r.period_to].filter(Boolean).map((d) => fmtDate(d!)).join(' to '))] : []),
+          row('Issued on', fmtDate(r.issue_date!)),
           row('Status', valid ? 'Valid' : 'Revoked'),
         );
         out.append(h, tb);

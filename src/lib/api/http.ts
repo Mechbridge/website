@@ -68,7 +68,9 @@ export const httpApi: Api = {
   createUser: (x) => req('/admin/users', send('POST', x)),
   updateUser: (id, x) => req(`/admin/users/${id}`, send('PUT', x)),
   mailboxes: () => req('/admin/mailboxes'),
-  createMailbox: async (local, password) => (await req<{ address: string }>('/admin/mailboxes', send('POST', { local, password }))).address,
+  createMailbox: async (local, password, name = '') => (await req<{ address: string }>('/admin/mailboxes', send('POST', { local, password, name }))).address,
+  setMailboxName: async (address, name) => { await req(`/admin/mailboxes/${encodeURIComponent(address)}/name`, send('PUT', { name })); },
+  saveWebmailSettings: (s) => req('/admin/mailboxes/settings', send('PUT', s)),
   setMailboxPassword: async (address, password) => { await req(`/admin/mailboxes/${encodeURIComponent(address)}/password`, send('POST', { password })); },
   deleteMailbox: async (address) => { await req(`/admin/mailboxes/${encodeURIComponent(address)}`, send('DELETE')); },
 };

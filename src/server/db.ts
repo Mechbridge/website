@@ -4,9 +4,10 @@ import { createHash, randomBytes } from 'node:crypto';
 import type { DatabaseSync } from 'node:sqlite';
 import type {
   CertFilter, CertPage, Certificate, CertificateInput, Lead, LeadEvent, LeadFilter, LeadPage, LeadStatus, LeadType, LeadUpdate,
-  Posting, PostingFilter, PostingInput, PostingKind, PostingPage, PostingStatus, Role, StaffRef, User,
+  Perm, Posting, PostingFilter, PostingInput, PostingKind, PostingPage, PostingStatus, Role, StaffRef, User,
 } from '../lib/api/types';
-import { LEAD_STATUSES, newCertificateCode, normaliseCode, slugify } from '../lib/roles';
+import { CERT_DETAIL_FIELDS } from '../lib/api/types';
+import { LEAD_STATUSES, cleanPerms, newCertificateCode, normaliseCode, slugify } from '../lib/roles';
 
 let _db: DatabaseSync | null = null;
 export const db = () => (_db ??= openDb());
@@ -35,7 +36,7 @@ function dateRange(col: string, from?: string, to?: string) {
 
 /* ---------------- users & sessions ---------------- */
 const toUser = (r: Row): User => ({
-  id: Number(r.id), email: String(r.email), name: String(r.name), role: r.role as Role, active: !!r.active,
+  id: Number(r.id), email: String(r.email), name: String(r.name), role: r.role as Role, perms: cleanPerms(r.perms ?? ''), active: !!r.active,
   created_at: String(r.created_at), last_login_at: String(r.last_login_at ?? ''),
 });
 
@@ -64,12 +65,13 @@ export const logout = (token: string) => run('DELETE FROM sessions WHERE token_h
 
 export const listUsers = () => all('SELECT * FROM users ORDER BY active DESC, name').map(toUser);
 export const listStaff = (): StaffRef[] => all('SELECT id, name, role FROM users WHERE active = 1 ORDER BY name').map((r) => ({ id: Number(r.id), name: String(r.name), role: r.role as Role }));
-export function createUser(u: { email: string; name: string; role: Role; password: string }) {
-  const r = run('INSERT INTO users (email, name, role, pw_hash) VALUES (?, ?, ?, ?)', u.email.trim(), u.name.trim(), u.role, hashPassword(u.password));
+export function createUser(u: { email: string; name: string; role: Role; password: string; perms?: Perm[] }) {
+  const r = run('INSERT INTO users (email, name, role, pw_hash, perms) VALUES (?, ?, ?, ?, ?)', u.email.trim(), u.name.trim(), u.role, hashPassword(u.password), (u.perms ?? []).join(','));
   return toUser(get('SELECT * FROM users WHERE id = ?', r.lastInsertRowid)!);
 }
-export function updateUser(id: number, u: { name?: string; role?: Role; active?: boolean; password?: string }) {
+export function updateUser(id: number, u: { name?: string; role?: Role; active?: boolean; password?: string; perms?: Perm[] }) {
   if (u.name !== undefined) run('UPDATE users SET name = ? WHERE id = ?', u.name.trim(), id);
+  if (u.perms !== undefined) run('UPDATE users SET perms = ? WHERE id = ?', u.perms.join(','), id);
   if (u.role !== undefined) run('UPDATE users SET role = ? WHERE id = ?', u.role, id);
   if (u.active !== undefined) {
     run('UPDATE users SET active = ? WHERE id = ?', u.active ? 1 : 0, id);
@@ -95,10 +97,14 @@ const toPosting = (r: Row): Posting => ({
   status: r.status as PostingStatus, created_at: String(r.created_at), updated_at: String(r.updated_at),
   ...(r.applicants !== undefined ? { applicants: Number(r.applicants) } : {}),
 });
-export const listOpenPostings = (kind: PostingKind) =>
-  all(`SELECT * FROM postings WHERE kind = ? AND status = 'open' ORDER BY (start_date = ''), start_date, created_at DESC`, kind).map(toPosting);
+// Public listing: every open posting, then the most recent closed ones (shown as no longer available).
+export const PUBLIC_CLOSED_LIMIT = 6;
+export const listOpenPostings = (kind: PostingKind) => [
+  ...all(`SELECT * FROM postings WHERE kind = ? AND status = 'open' ORDER BY (start_date = ''), start_date, created_at DESC`, kind),
+  ...all(`SELECT * FROM postings WHERE kind = ? AND status = 'closed' ORDER BY updated_at DESC LIMIT ?`, kind, PUBLIC_CLOSED_LIMIT),
+].map(toPosting);
 export const getOpenPosting = (kind: PostingKind, slug: string) => {
-  const r = get(`SELECT * FROM postings WHERE kind = ? AND slug = ? AND status = 'open'`, kind, slug);
+  const r = get(`SELECT * FROM postings WHERE kind = ? AND slug = ? AND status IN ('open','closed')`, kind, slug);
   return r ? toPosting(r) : null;
 };
 export const getPosting = (id: number) => { const r = get('SELECT * FROM postings WHERE id = ?', id); return r ? toPosting(r) : null; };
@@ -106,7 +112,7 @@ export const getPosting = (id: number) => { const r = get('SELECT * FROM posting
 export function pagePostings(kinds: PostingKind[], f: PostingFilter): PostingPage {
   const { page, pageSize, offset } = paging(f);
   const allowed = f.kind ? kinds.filter((k) => k === f.kind) : kinds;
-  const empty = { rows: [], total: 0, page, pageSize, counts: { all: 0, draft: 0, open: 0, closed: 0 } };
+  const empty = { rows: [], total: 0, page, pageSize, counts: { all: 0, draft: 0, open: 0, closed: 0, archived: 0 } };
   if (!allowed.length) return empty;
   const where = [`p.kind IN (${qs(allowed.length)})`];
   const params: unknown[] = [...allowed];
@@ -278,6 +284,7 @@ const toCert = (r: Row): Certificate => ({
   id: Number(r.id), code: String(r.code), holder_name: String(r.holder_name), programme: r.programme as Certificate['programme'],
   title: String(r.title), batch: String(r.batch), issue_date: String(r.issue_date), status: r.status as Certificate['status'],
   revoked_reason: String(r.revoked_reason), issued_by: String(r.issued_by), created_at: String(r.created_at),
+  ...(Object.fromEntries(CERT_DETAIL_FIELDS.map((k) => [k, String(r[k] ?? '')])) as Pick<Certificate, (typeof CERT_DETAIL_FIELDS)[number]>),
 });
 function certWhere(f: CertFilter, withStatus = true) {
   const where = ['1=1'], params: unknown[] = [];
@@ -307,12 +314,13 @@ export const getCertificate = (id: number) => { const r = get('SELECT * FROM cer
 export function issueCertificate(c: CertificateInput, issuedBy: string) {
   let code = newCertificateCode();
   while (get('SELECT id FROM certificates WHERE code = ?', code)) code = newCertificateCode();
-  const r = run('INSERT INTO certificates (code, holder_name, programme, title, batch, issue_date, issued_by) VALUES (?,?,?,?,?,?,?)',
-    code, c.holder_name, c.programme, c.title, c.batch, c.issue_date, issuedBy);
+  const r = run(`INSERT INTO certificates (code, holder_name, programme, title, batch, issue_date, issued_by, ${CERT_DETAIL_FIELDS.join(', ')}) VALUES (?,?,?,?,?,?,?,${qs(CERT_DETAIL_FIELDS.length)})`,
+    code, c.holder_name, c.programme, c.title, c.batch, c.issue_date, issuedBy, ...CERT_DETAIL_FIELDS.map((k) => c[k] ?? ''));
   return getCertificate(Number(r.lastInsertRowid))!;
 }
 export function updateCertificate(id: number, c: CertificateInput) {
-  run('UPDATE certificates SET holder_name=?, programme=?, title=?, batch=?, issue_date=? WHERE id=?', c.holder_name, c.programme, c.title, c.batch, c.issue_date, id);
+  run(`UPDATE certificates SET holder_name=?, programme=?, title=?, batch=?, issue_date=?, ${CERT_DETAIL_FIELDS.map((k) => `${k}=?`).join(', ')} WHERE id=?`,
+    c.holder_name, c.programme, c.title, c.batch, c.issue_date, ...CERT_DETAIL_FIELDS.map((k) => c[k] ?? ''), id);
   return getCertificate(id);
 }
 export function setCertificateStatus(id: number, status: 'valid' | 'revoked', reason = '') {
@@ -327,5 +335,5 @@ export function verifyCertificate(code: string) {
   const r = get('SELECT * FROM certificates WHERE code = ?', normaliseCode(code));
   if (!r) return { found: false };
   const c = toCert(r);
-  return { found: true, code: c.code, holder_name: c.holder_name, programme: c.programme, title: c.title, issue_date: c.issue_date, status: c.status };
+  return { found: true, code: c.code, holder_name: c.holder_name, programme: c.programme, title: c.title, issue_date: c.issue_date, period_from: c.period_from, period_to: c.period_to, status: c.status };
 }

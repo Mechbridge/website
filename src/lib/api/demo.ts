@@ -6,16 +6,17 @@ import type {
   CertFilter, Certificate, Lead, LeadEvent, LeadFilter, LeadPage, LeadStatus, LeadType, LeadUpdate,
   MailboxList, Posting, PostingFilter, PostingKind, PostingPage, Role, User,
 } from './types';
-import { CORE_MAILBOXES, MAIL_DOMAIN, mailAddress, mailAddressError, mailPasswordError, canManageMailboxes } from '../roles';
+import { CORE_MAILBOXES, MAIL_DOMAIN, mailAddress, mailAddressError, mailPasswordError, mailNameError, canManageMailboxes, cleanPerms, cleanWebmailSettings } from '../roles';
 import { LEAD_STATUSES, canManageCertificates, canManageUsers, leadTypesFor, newCertificateCode, normaliseCode, postingKindsFor, slugify } from '../roles';
 
-const KEY = 'mb-demo-v4';
+const KEY = 'mb-demo-v5';
 export const DEMO_PASSWORD = 'demo1234';
 export const DEMO_ACCOUNTS: { email: string; name: string; role: Role }[] = [
   { email: 'admin@demo.mechbridge', name: 'Demo Superadmin', role: 'superadmin' },
   { email: 'hr@demo.mechbridge', name: 'Demo HR', role: 'hr' },
   { email: 'training@demo.mechbridge', name: 'Demo Training', role: 'training' },
   { email: 'sales@demo.mechbridge', name: 'Demo Sales', role: 'sales' },
+  { email: 'docs@demo.mechbridge', name: 'Demo Documentation', role: 'documentation' },
 ];
 
 interface State { seq: number; users: User[]; postings: Posting[]; leads: (Lead & { cv?: boolean })[]; events: LeadEvent[]; certificates: Certificate[]; session: number | null }
@@ -28,7 +29,7 @@ const ago = (days: number, hours = 0) => stamp(new Date(Date.now() - days * 864e
 function seed(): State {
   let id = 1;
   const t = now();
-  const users: User[] = DEMO_ACCOUNTS.map((a) => ({ id: id++, ...a, active: true, created_at: t, last_login_at: '' }));
+  const users: User[] = DEMO_ACCOUNTS.map((a) => ({ id: id++, ...a, perms: a.role === 'sales' ? ['drafter'] : [], active: true, created_at: t, last_login_at: '' }));
   const P = (kind: PostingKind, title: string, location: string, mode: string, start: string, summary: string, body: string, status: Posting['status'] = 'open'): Posting =>
     ({ id: id++, kind, title, slug: slugify(title), location, mode, start_date: start, summary, body, status, created_at: t, updated_at: t });
   const postings = [
@@ -39,7 +40,8 @@ function seed(): State {
     P('job', 'MEP Quantity Surveyor', 'India', 'Hybrid', '', 'Sample posting: takeoffs, BOQs and cost estimates for GCC projects.',
       'Sample posting for the demo.\n\n- HVAC, firefighting and plumbing takeoffs\n- BOQ preparation and rate analysis\n- Vendor quotation comparison'),
     P('job', 'Plumbing Draughtsperson', 'Doha, Qatar', 'On-site', '', 'Sample posting: plumbing shop drawings and risers.', 'Sample posting for the demo.', 'draft'),
-    P('job', 'Senior HVAC Engineer', 'Kuwait City, Kuwait', 'On-site', '', 'Sample posting: closed role kept for reference.', 'Sample posting for the demo.', 'closed'),
+    P('job', 'Senior HVAC Engineer', 'Kuwait City, Kuwait', 'On-site', '', 'Sample posting: this role has been filled.', 'Sample posting for the demo.', 'closed'),
+    P('job', 'Electrical Coordinator', 'Muscat, Oman', 'On-site', '', 'Sample posting: archived, hidden from the website.', 'Sample posting for the demo.', 'archived'),
     P('internship', 'GCC-Ready Internship: next intake', 'India and GCC', 'Supervised project work', day(45), 'Sample intake: the full course plus supervised project work.',
       'Sample intake for the demo. Dates and fee are confirmed by the training team.'),
     P('training', 'Professional MEP Engineering Training: next batch', 'Live sessions', 'Instructor-led', day(21), 'Sample batch: live sessions scheduled around a working week.', 'Sample batch for the demo.'),
@@ -65,7 +67,7 @@ function seed(): State {
     const type = types[rnd(types.length)];
     const created = ago(rnd(90), rnd(24));
     const status = (i < 14 ? 'new' : LEAD_STATUSES[rnd(LEAD_STATUSES.length)]) as LeadStatus;
-    const ref = type === 'job' ? postings[rnd(3)] : type === 'internship' ? postings[5] : type === 'training' ? postings[6 + rnd(2)] : null;
+    const ref = type === 'job' ? postings[rnd(3)] : type === 'internship' ? postings[6] : type === 'training' ? postings[7 + rnd(2)] : null;
     const assigned = rnd(3) === 0 ? users[rnd(users.length)] : null;
     const lead = {
       id: id++, type, name: `Sample Lead ${String(i + 1).padStart(2, '0')}`, email: `lead${i + 1}@example.com`, phone: '', country: countries[rnd(countries.length)],
@@ -80,7 +82,8 @@ function seed(): State {
   leads.sort((a, b) => b.created_at.localeCompare(a.created_at));
 
   const C = (code: string, holder: string, programme: Certificate['programme'], title: string, status: Certificate['status'], issued: number, reason = ''): Certificate =>
-    ({ id: id++, code, holder_name: holder, programme, title, batch: 'Sample batch', issue_date: day(-issued), status, revoked_reason: reason, issued_by: 'Demo Training', created_at: t });
+    ({ id: id++, code, holder_name: holder, programme, title, batch: 'Sample batch', issue_date: day(-issued), status, revoked_reason: reason, issued_by: 'Demo Documentation', created_at: t,
+      period_from: '', period_to: '', hours: '', mode: '', grade: '', modules: '', remarks: '', signatory_name: '', signatory_title: '' });
   const certificates = [
     C('MBI-2026-DEMO01', 'Sample Trainee', 'training', 'Professional MEP Engineering Training', 'valid', 30),
     C('MBI-2026-DEMO02', 'Sample Intern', 'internship', 'GCC-Ready Internship Package', 'revoked', 60, 'Issued in error (sample)'),
@@ -169,8 +172,11 @@ const csvUrl = <T extends object>(cols: string[], rows: T[]) => {
 export const demoApi: Api = {
   demo: true,
 
-  async listPostings(kind) { await tick(); return clone(load().postings.filter((p) => p.kind === kind && p.status === 'open')); },
-  async getPosting(kind, slug) { await tick(); return clone(load().postings.find((p) => p.kind === kind && p.slug === slug && p.status === 'open') ?? null); },
+  async listPostings(kind) {
+    await tick(); const all = load().postings.filter((p) => p.kind === kind);
+    return clone([...all.filter((p) => p.status === 'open'), ...all.filter((p) => p.status === 'closed').sort((a, b) => b.updated_at.localeCompare(a.updated_at)).slice(0, 6)]);
+  },
+  async getPosting(kind, slug) { await tick(); return clone(load().postings.find((p) => p.kind === kind && p.slug === slug && ['open', 'closed'].includes(p.status)) ?? null); },
   async submitLead(form) {
     await tick();
     const s = load();
@@ -192,7 +198,7 @@ export const demoApi: Api = {
   async verify(code) {
     await tick();
     const c = load().certificates.find((x) => x.code === normaliseCode(code));
-    return c ? { found: true, code: c.code, holder_name: c.holder_name, programme: c.programme, title: c.title, issue_date: c.issue_date, status: c.status } : { found: false };
+    return c ? { found: true, code: c.code, holder_name: c.holder_name, programme: c.programme, title: c.title, issue_date: c.issue_date, period_from: c.period_from, period_to: c.period_to, status: c.status } : { found: false };
   },
 
   async login(email, password) {
@@ -266,7 +272,7 @@ export const demoApi: Api = {
     const base = s.postings.filter((p) => kinds.includes(p.kind) && (!f.kind || p.kind === f.kind)
       && (!f.q || [p.title, p.location, p.summary].join(' ').toLowerCase().includes(f.q.toLowerCase()))
       && ((!f.from && !f.to) || (p.start_date && inRange(p.start_date, f.from, f.to))));
-    const counts = { all: base.length, draft: 0, open: 0, closed: 0 };
+    const counts = { all: base.length, draft: 0, open: 0, closed: 0, archived: 0 };
     base.forEach((p) => counts[p.status]++);
     const rows = base.filter((p) => !f.status || p.status === f.status)
       .map((p) => ({ ...p, applicants: s.leads.filter((l) => l.ref_id === p.id).length }))
@@ -312,7 +318,7 @@ export const demoApi: Api = {
   async certificate(id) { const s = load(); need(canManageCertificates(current(s).role)); const c = s.certificates.find((x) => x.id === id); if (!c) fail(404, 'Certificate not found.'); return clone(c!); },
   async certificatesCsvUrl(f) {
     const s = load(); need(canManageCertificates(current(s).role));
-    return csvUrl(['code', 'holder_name', 'programme', 'title', 'batch', 'issue_date', 'status', 'revoked_reason', 'issued_by', 'created_at'], s.certificates.filter((c) => certMatches(c, f)));
+    return csvUrl(['code', 'holder_name', 'programme', 'title', 'batch', 'issue_date', 'period_from', 'period_to', 'hours', 'mode', 'grade', 'modules', 'remarks', 'signatory_name', 'signatory_title', 'status', 'revoked_reason', 'issued_by', 'created_at'], s.certificates.filter((c) => certMatches(c, f)));
   },
   async issueCertificate(c) {
     await tick(); const s = load(); const u = current(s); need(canManageCertificates(u.role));
@@ -349,7 +355,7 @@ export const demoApi: Api = {
   async createUser(x) {
     await tick(); const s = load(); need(canManageUsers(current(s).role));
     if (s.users.some((u) => u.email.toLowerCase() === x.email.toLowerCase())) fail(409, 'An account with that email already exists.');
-    const rec: User = { id: s.seq++, email: x.email, name: x.name, role: x.role, active: true, created_at: now(), last_login_at: '' };
+    const rec: User = { id: s.seq++, email: x.email, name: x.name, role: x.role, perms: cleanPerms(x.perms), active: true, created_at: now(), last_login_at: '' };
     s.users.push(rec); save(s); return clone(rec);
   },
   async updateUser(id, x) {
@@ -358,6 +364,7 @@ export const demoApi: Api = {
     const supers = s.users.filter((u) => u.role === 'superadmin' && u.active).length;
     if (r!.role === 'superadmin' && r!.active && ((x.role && x.role !== 'superadmin') || x.active === false) && supers <= 1) fail(400, 'Keep at least one active superadmin.');
     if (x.name !== undefined) r!.name = x.name; if (x.role) r!.role = x.role; if (x.active !== undefined) r!.active = x.active;
+    if (x.perms !== undefined) r!.perms = cleanPerms(x.perms);
     save(s); return clone(r!);
   },
 
@@ -366,19 +373,30 @@ export const demoApi: Api = {
     await tick(); need(canManageMailboxes(current(load()).role));
     return clone(mailLoad());
   },
-  async createMailbox(local, password) {
+  async createMailbox(local, password, name = '') {
     await tick(); need(canManageMailboxes(current(load()).role));
     const address = mailAddress(local), m = mailLoad();
-    const e = mailAddressError(address) || mailPasswordError(password); if (e) fail(400, e);
+    const e = mailAddressError(address) || mailPasswordError(password) || mailNameError(name.trim()); if (e) fail(400, e);
     if (m.mailboxes.some((x) => x.address === address)) fail(409, `${address} already exists.`);
     if (m.aliases.some((x) => x.from === address)) fail(409, `${address} is already an alias.`);
-    m.mailboxes.push({ address, size_bytes: 0, created: new Date().toISOString(), core: false });
+    m.mailboxes.push({ address, name: name.trim(), size_bytes: 0, created: new Date().toISOString(), core: false });
     m.mailboxes.sort((a, b) => a.address.localeCompare(b.address)); mailSave(m); return address;
   },
   async setMailboxPassword(address, password) {
     await tick(); need(canManageMailboxes(current(load()).role));
     const e = mailPasswordError(password); if (e) fail(400, e);
     if (!mailLoad().mailboxes.some((x) => x.address === address)) fail(404, `${address} doesn't exist.`);
+  },
+  async setMailboxName(address, name) {
+    await tick(); need(canManageMailboxes(current(load()).role));
+    const e = mailNameError(name.trim()); if (e) fail(400, e);
+    const m = mailLoad(); const box = m.mailboxes.find((x) => x.address === address);
+    if (!box) fail(404, `${address} doesn't exist.`);
+    box!.name = name.trim(); mailSave(m);
+  },
+  async saveWebmailSettings(x) {
+    await tick(); need(canManageMailboxes(current(load()).role));
+    const m = mailLoad(); m.settings = cleanWebmailSettings(x); mailSave(m); return clone(m.settings);
   },
   async deleteMailbox(address) {
     await tick(); need(canManageMailboxes(current(load()).role));
@@ -388,14 +406,15 @@ export const demoApi: Api = {
   },
 };
 
-const MAIL_KEY = 'mb-demo-mail-v1';
+const MAIL_KEY = 'mb-demo-mail-v2';
 function mailLoad(): MailboxList {
   try { const raw = localStorage.getItem(MAIL_KEY); if (raw) return JSON.parse(raw); } catch { /* storage blocked: fall back to the seed */ }
   const t = ago(120);
   const sizes: Record<string, number> = { connect: 48_200_000, support: 6_900_000, careers: 21_400_000, intern: 13_100_000 };
   return {
     available: true, mode: 'demo', domain: MAIL_DOMAIN, webmail: `https://mail.${MAIL_DOMAIN}`,
-    mailboxes: CORE_MAILBOXES.map((l) => ({ address: `${l}@${MAIL_DOMAIN}`, size_bytes: sizes[l] ?? 0, created: t.replace(' ', 'T') + 'Z', core: true })),
+    mailboxes: CORE_MAILBOXES.map((l) => ({ address: `${l}@${MAIL_DOMAIN}`, name: `Mechbridge ${l[0].toUpperCase()}${l.slice(1)}`, size_bytes: sizes[l] ?? 0, created: t.replace(' ', 'T') + 'Z', core: true })),
+    settings: cleanWebmailSettings({}),
     aliases: ['postmaster', 'abuse', 'info'].map((l) => ({ from: `${l}@${MAIL_DOMAIN}`, to: `connect@${MAIL_DOMAIN}` })),
   };
 }

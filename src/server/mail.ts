@@ -5,8 +5,8 @@ import { spawn } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { dataDir } from './core.mjs';
-import type { MailAlias, Mailbox, MailboxList } from '../lib/api/types';
-import { MAIL_DOMAIN, CORE_MAILBOXES, mailAddress, mailAddressError, mailPasswordError } from '../lib/roles';
+import type { MailAlias, Mailbox, MailboxList, WebmailSettings } from '../lib/api/types';
+import { MAIL_DOMAIN, CORE_MAILBOXES, mailAddress, mailAddressError, mailPasswordError, mailNameError, cleanWebmailSettings } from '../lib/roles';
 
 const HELPER = '/usr/local/sbin/mb-mailbox';
 const mode = (): MailboxList['mode'] =>
@@ -33,7 +33,7 @@ function helper(args: string[], input = ''): Promise<string> {
 
 /* ---------- mock store for local development ---------- */
 const mockFile = () => path.join(dataDir(), 'mailboxes-mock.json');
-interface MockState { mailboxes: { address: string; created: string }[]; aliases: MailAlias[] }
+interface MockState { mailboxes: { address: string; created: string; name?: string }[]; aliases: MailAlias[]; settings?: WebmailSettings }
 function mockLoad(): MockState {
   try { return JSON.parse(readFileSync(mockFile(), 'utf8')); } catch {
     const now = new Date().toISOString();
@@ -58,38 +58,55 @@ export function checkPassword(pw: unknown) {
   if (e) throw new MailError(400, e);
   return p;
 }
+export function checkName(name: unknown) {
+  const n = String(name ?? '').trim().replace(/\s+/g, ' ');
+  const e = mailNameError(n);
+  if (e) throw new MailError(400, e);
+  return n;
+}
 
 /* ---------- operations ---------- */
 export async function listMailboxes(): Promise<MailboxList> {
   const m = mode();
   const base = { mode: m, domain: MAIL_DOMAIN, webmail: `https://mail.${MAIL_DOMAIN}` };
-  if (m === 'off') return { ...base, available: false, mailboxes: [], aliases: [] };
+  if (m === 'off') return { ...base, available: false, mailboxes: [], aliases: [], settings: cleanWebmailSettings({}) };
   if (m === 'mock') {
     const s = mockLoad();
-    return { ...base, available: true, mailboxes: s.mailboxes.map((x) => ({ ...x, size_bytes: 0, core: isCore(x.address) })), aliases: s.aliases };
+    return {
+      ...base, available: true, aliases: s.aliases, settings: cleanWebmailSettings(s.settings),
+      mailboxes: s.mailboxes.map((x) => ({ address: x.address, name: x.name ?? '', created: x.created, size_bytes: 0, core: isCore(x.address) })).sort((a, b) => a.address.localeCompare(b.address)),
+    };
   }
+  // Helper output: mailbox lines, then "--aliases" and alias lines, then "--settings" and the settings JSON.
   const out = await helper(['list']);
-  const [boxes, aliases = ''] = out.split('--aliases');
+  const [rest, settingsJson = ''] = out.split('--settings\n');
+  const [boxes, aliases = ''] = rest.split('--aliases');
   const mailboxes: Mailbox[] = boxes.split('\n').filter(Boolean).map((line) => {
-    const [address, size, created] = line.split('\t');
-    return { address, size_bytes: Number(size) || 0, created: created || '', core: isCore(address) };
+    const [address, size, created, name] = line.split('\t');
+    return { address, name: name ?? '', size_bytes: Number(size) || 0, created: created || '', core: isCore(address) };
   }).sort((a, b) => a.address.localeCompare(b.address));
-  return { ...base, available: true, mailboxes, aliases: aliases.split('\n').filter(Boolean).map((l) => { const [from, to] = l.split('\t'); return { from, to }; }) };
+  let settings: unknown = {};
+  try { settings = JSON.parse(settingsJson.trim() || '{}'); } catch { /* unreadable file: fall back to defaults */ }
+  return {
+    ...base, available: true, mailboxes, settings: cleanWebmailSettings(settings),
+    aliases: aliases.split('\n').filter(Boolean).map((l) => { const [from, to] = l.split('\t'); return { from, to }; }),
+  };
 }
 
 const isCore = (address: string) => CORE_MAILBOXES.some((l) => address === `${l}@${MAIL_DOMAIN}`);
 
-export async function createMailbox(input: string, password: unknown) {
-  const address = normaliseAddress(input), pw = checkPassword(password);
+export async function createMailbox(input: string, password: unknown, name: unknown = '') {
+  const address = normaliseAddress(input), pw = checkPassword(password), nm = checkName(name);
   const m = mode();
   if (m === 'off') throw new MailError(503, 'Mail management is not set up on this server yet.');
   if (m === 'mock') {
     const s = mockLoad();
     if (s.mailboxes.some((x) => x.address === address)) throw new MailError(409, `${address} already exists.`);
     if (s.aliases.some((x) => x.from === address)) throw new MailError(409, `${address} is already an alias.`);
-    s.mailboxes.push({ address, created: new Date().toISOString() }); mockSave(s); return address;
+    s.mailboxes.push({ address, created: new Date().toISOString(), name: nm }); mockSave(s); return address;
   }
   await helper(['add', address], pw);
+  if (nm) await helper(['name', address], nm);
   return address;
 }
 
@@ -116,4 +133,27 @@ export async function deleteMailbox(input: string) {
   }
   await helper(['delete', address]);
   return address;
+}
+
+export async function setMailboxName(input: string, name: unknown) {
+  const address = normaliseAddress(input), nm = checkName(name);
+  const m = mode();
+  if (m === 'off') throw new MailError(503, 'Mail management is not set up on this server yet.');
+  if (m === 'mock') {
+    const s = mockLoad();
+    const box = s.mailboxes.find((x) => x.address === address);
+    if (!box) throw new MailError(404, `${address} doesn't exist.`);
+    box.name = nm; mockSave(s); return address;
+  }
+  await helper(['name', address], nm);
+  return address;
+}
+
+export async function saveWebmailSettings(input: unknown) {
+  const settings = cleanWebmailSettings(input);
+  const m = mode();
+  if (m === 'off') throw new MailError(503, 'Mail management is not set up on this server yet.');
+  if (m === 'mock') { const s = mockLoad(); s.settings = settings; mockSave(s); return settings; }
+  await helper(['settings'], JSON.stringify(settings));
+  return settings;
 }

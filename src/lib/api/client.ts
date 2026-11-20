@@ -1,7 +1,7 @@
 // One client API for the public pages and the admin portal.
 // Production (VPS) talks to /api; the GitHub demo build keeps everything in localStorage.
 import type {
-  CertBulkAction, CertFilter, CertPage, Certificate, CertificateInput, Lead, LeadBulkAction, LeadEvent, LeadFilter, LeadPage, LeadUpdate, MailboxList,
+  CertBulkAction, CertFilter, CertPage, Certificate, CertificateInput, Lead, LeadBulkAction, LeadEvent, LeadFilter, LeadPage, LeadUpdate, MailboxList, Perm, WebmailSettings,
   Posting, PostingBulkAction, PostingFilter, PostingInput, PostingKind, PostingPage, Role, StaffRef, User, VerifyResult,
 } from './types';
 import { httpApi } from './http';
@@ -48,11 +48,13 @@ export interface Api {
   bulkCertificates(ids: number[], a: CertBulkAction): Promise<number>;
   // users
   users(): Promise<User[]>;
-  createUser(u: { email: string; name: string; role: Role; password: string }): Promise<User>;
-  updateUser(id: number, u: { name?: string; role?: Role; active?: boolean; password?: string }): Promise<User>;
+  createUser(u: { email: string; name: string; role: Role; password: string; perms?: Perm[] }): Promise<User>;
+  updateUser(id: number, u: { name?: string; role?: Role; active?: boolean; password?: string; perms?: Perm[] }): Promise<User>;
   // mailboxes on the mail server (superadmin)
   mailboxes(): Promise<MailboxList>;
-  createMailbox(local: string, password: string): Promise<string>;
+  createMailbox(local: string, password: string, name?: string): Promise<string>;
+  setMailboxName(address: string, name: string): Promise<void>;
+  saveWebmailSettings(s: WebmailSettings): Promise<WebmailSettings>;
   setMailboxPassword(address: string, password: string): Promise<void>;
   deleteMailbox(address: string): Promise<void>;
 }

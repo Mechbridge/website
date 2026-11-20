@@ -396,7 +396,7 @@ sudo mb-mailbox add intern@mechbridgegroup.com
 sudo mb-mailbox list
 ```
 
-From now on, manage mailboxes in the **staff portal → Mailboxes** (superadmin only): create a mailbox, reset a password or delete one. The same tool works in PuTTY: `sudo mb-mailbox passwd name@mechbridgegroup.com`, `sudo mb-mailbox delete name@mechbridgegroup.com`. Deleted mailboxes' mail is moved to `/var/mail/deleted`, not erased.
+From now on, manage mailboxes in the **staff portal → Mailboxes** (superadmin only): create a mailbox, set its sender name, reset a password or delete one, and choose the webmail settings for everyone (Step 8.1 connects those to webmail). The same tool works in PuTTY: `sudo mb-mailbox passwd name@mechbridgegroup.com`, `sudo mb-mailbox delete name@mechbridgegroup.com`. Deleted mailboxes' mail is moved to `/var/mail/deleted`, not erased.
 
 Forwarding addresses (postmaster@, info@ and the rest) stay in `/etc/postfix/virtual`. After editing that file run `sudo postfix reload`.
 
@@ -414,6 +414,14 @@ If the install pulled in Apache, switch it off (nginx serves everything):
 sudo systemctl disable --now apache2 2>/dev/null; true
 ```
 
+Ubuntu 26.04 ships PHP 8.5, which has its own `array_first()` function. Roundcube's packaged copy declares one too, and webmail then fails with error 500 ("Cannot redeclare function array_first()"). Make Roundcube's copy apply only when PHP lacks it:
+```bash
+B=/usr/share/roundcube/program/lib/Roundcube/bootstrap.php
+grep -q 'function_exists("array_first")' $B || { sudo cp $B $B.orig && sudo perl -0pi -e 's/^(function array_first\(.*?^\}\n)/if (!function_exists("array_first")) {\n$1}\n/ms' $B; }
+sudo php -l $B && sudo systemctl reload php*-fpm
+```
+A later Roundcube package update replaces this file. If webmail shows error 500 again after an update, run this block again.
+
 Point Roundcube at this mail server:
 ```bash
 sudo tee -a /etc/roundcube/config.inc.php > /dev/null <<'EOF'
@@ -427,9 +435,29 @@ $config['product_name'] = 'Mechbridge Mail';
 $config['username_domain'] = 'mechbridgegroup.com';
 $config['login_autocomplete'] = 2;
 $config['enable_spellcheck'] = false;
-$config['plugins'] = ['archive', 'zipdownload', 'markasjunk'];
+$config['plugins'] = ['archive', 'zipdownload', 'markasjunk', 'mechbridge'];
 EOF
 ```
+
+### 8.1 Mechbridge sign-in screen, sender names and settings for everyone
+
+The `mechbridge` webmail plugin (in `deploy/roundcube/mechbridge`) brands the sign-in screen, applies the settings chosen in **staff portal → Mailboxes → Webmail settings for everyone**, and sets each person's sender name and the company signature. Install it, or reinstall it after an update:
+```bash
+cd /var/www/mechbridge
+sudo rm -rf /usr/share/roundcube/plugins/mechbridge
+sudo cp -r deploy/roundcube/mechbridge /usr/share/roundcube/plugins/mechbridge
+sudo chmod -R a+rX /usr/share/roundcube/plugins/mechbridge
+[ -d /var/lib/roundcube/plugins ] && [ ! -L /var/lib/roundcube/plugins ] && sudo ln -sfn /usr/share/roundcube/plugins/mechbridge /var/lib/roundcube/plugins/mechbridge
+grep -q "'mechbridge'" /etc/roundcube/config.inc.php || sudo sed -i "s/'markasjunk'\]/'markasjunk', 'mechbridge']/" /etc/roundcube/config.inc.php
+grep -n "'mechbridge'" /etc/roundcube/config.inc.php
+sudo systemctl reload php*-fpm
+```
+The `grep` line must print the plugins line with `'mechbridge'` in it. Then open https://mail.mechbridgegroup.com: the sign-in screen is navy with the Mechbridge logo, a cream heading and a red sign-in button. If it shows error 500 instead, run `sudo tail -n 20 /var/log/nginx/error.log` and send the output to the developer.
+
+How the portal settings reach webmail:
+- **Settings for everyone** apply the next time each person signs in. Unlocked, they are defaults that people can change in webmail; locked, they always apply.
+- **Sender name** becomes the From name the next time that person signs in.
+- **Company signature** is built from the sender name, the address and the lines set in the portal. "Where none is set" leaves anyone's own signature alone.
 
 ## Step 9. nginx: website and webmail
 
@@ -508,6 +536,15 @@ sudo -u mechbridge npm run build
 sudo systemctl restart mechbridge
 ```
 The database upgrades itself on restart.
+
+If the update changed anything in `deploy/` (the mailbox tool, its sudo rule or the webmail plugin), reinstall those too. It's safe to run every time:
+```bash
+cd /var/www/mechbridge
+sudo install -m 0755 -o root -g root deploy/mb-mailbox /usr/local/sbin/mb-mailbox
+sudo install -m 0440 -o root -g root deploy/sudoers-mechbridge /etc/sudoers.d/mechbridge && sudo visudo -c
+sudo rm -rf /usr/share/roundcube/plugins/mechbridge && sudo cp -r deploy/roundcube/mechbridge /usr/share/roundcube/plugins/mechbridge && sudo chmod -R a+rX /usr/share/roundcube/plugins/mechbridge
+sudo systemctl reload php*-fpm
+```
 
 ## Where to look when something's wrong
 

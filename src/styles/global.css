@@ -261,6 +261,11 @@ a:hover .slot img, .slot--zoom:hover img { transform: scale(1.03); }
 .posts--grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); }
 .post { display: grid; gap: 10px; align-content: start; padding: 24px; border-radius: 12px; background: var(--color-surface); border: 1px solid var(--color-border); }
 .post__t { font-size: clamp(1.35rem, 2vw, 1.7rem); }
+.post__head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.post__pill { display: inline-flex; align-items: center; min-height: 26px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--color-border-strong); color: var(--color-text-muted); font: 600 .75rem/1 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; }
+.post--closed { background: transparent; border-style: dashed; }
+.post--closed .post__t, .post--closed .post__meta { color: var(--color-text-muted); }
+.post__go:disabled { opacity: .45; cursor: not-allowed; filter: grayscale(1); pointer-events: none; }
 .post__meta { color: var(--color-link); font-size: var(--t-micro); text-transform: uppercase; letter-spacing: .06em; }
 .post__s { max-width: 60ch; }
 .post__go { justify-self: start; margin-top: 6px; }
@@ -273,3 +278,39 @@ a:hover .slot img, .slot--zoom:hover img { transform: scale(1.03); }
 .picked { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 14px 16px; border-radius: var(--radius); border: 1px solid var(--color-border-strong); margin-bottom: 18px; }
 .picked[hidden] { display: none; }
 .picked button { background: none; border: 0; color: var(--color-link); font-weight: 600; cursor: pointer; min-height: 44px; padding: 0; text-decoration: underline; text-underline-offset: 3px; }
+
+/* ---------- themed dropdowns (src/scripts/select.ts) ---------- */
+.msel { position: relative; display: inline-flex; align-items: stretch; max-width: 100%; vertical-align: middle; cursor: pointer; }
+.field > .msel, .msel:only-child { display: flex; width: 100%; }
+.msel > select.msel__el { flex: 1 1 auto; min-width: 0; width: 100%; appearance: none; -webkit-appearance: none; background-image: none; padding-right: 44px !important; cursor: pointer; text-overflow: ellipsis; }
+.msel-on .msel > select.msel__el { pointer-events: none; }
+.msel::after {
+  content: ""; position: absolute; top: 50%; right: 16px; width: 12px; height: 12px; margin-top: -6px; pointer-events: none;
+  background: currentColor; opacity: .75; transition: transform .2s var(--ease), opacity .2s;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 4.25l4 3.75 4-3.75' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 4.25l4 3.75 4-3.75' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+.msel.is-open::after { transform: rotate(180deg); opacity: 1; }
+.msel:hover::after { opacity: 1; }
+.field .msel:hover > select { border-color: var(--color-text-muted); }
+.msel:has(select:disabled) { cursor: not-allowed; opacity: .55; }
+.msel-pop {
+  position: fixed; z-index: 1000; min-width: 180px; overflow-y: auto; overscroll-behavior: contain; padding: 6px;
+  border-radius: 14px; background: var(--msel-bg); color: var(--msel-fg); border: 1px solid var(--msel-line);
+  box-shadow: 0 22px 50px -20px rgb(0 0 0 / .6), 0 2px 10px rgb(0 0 0 / .14);
+  animation: msel-in .16s var(--ease); transform-origin: top center; scrollbar-width: thin;
+}
+.msel-pop[data-up] { transform-origin: bottom center; }
+@keyframes msel-in { from { opacity: 0; transform: translateY(-4px) scale(.98); } }
+.msel-opt { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 40px; padding: 8px 12px; border-radius: 9px; cursor: pointer; font-size: .9375rem; line-height: 1.3; }
+.msel-opt.is-active { background: color-mix(in srgb, var(--msel-fg) 11%, transparent); }
+.msel-opt[aria-selected="true"] { font-weight: 650; }
+.msel-opt[aria-selected="true"]::after {
+  content: ""; flex: none; width: 14px; height: 14px; background: var(--msel-accent);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3 8.5l3.2 3L13 4.5' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3 8.5l3.2 3L13 4.5' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+.msel-opt[aria-disabled="true"] { opacity: .4; cursor: default; }
+.msel-group { padding: 10px 12px 4px; font: 600 .6875rem/1 var(--f-mono); letter-spacing: .1em; text-transform: uppercase; opacity: .6; }
+@media (pointer: coarse) { .msel-opt { min-height: 44px; } }
+@media (prefers-reduced-motion: reduce) { .msel-pop { animation: none; } .msel::after { transition: none; } }

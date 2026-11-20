@@ -1,4 +1,5 @@
-// Renders open postings (jobs, internship intakes, training batches) from the client API.
+// Renders postings (jobs, internship intakes, training batches) from the client API.
+// Open ones first; recently closed ones follow, marked no longer available with the button disabled.
 // All text is set with textContent, never innerHTML, because postings are staff-entered.
 import { api } from '../lib/api/client';
 import type { Posting, PostingKind } from '../lib/api/types';
@@ -35,6 +36,12 @@ export function renderBody(text: string) {
   return frag;
 }
 
+const CLOSED_TEXT: Record<PostingKind, string> = {
+  job: 'This job is no longer available.',
+  internship: 'This intake is no longer open.',
+  training: 'This batch is no longer open.',
+};
+
 interface Opts {
   kind: PostingKind;
   root: HTMLElement; // container; gets cards appended
@@ -50,15 +57,20 @@ export async function mountPostings({ kind, root, empty, action, onPick, details
   try {
     const list = await api.listPostings(kind);
     root.replaceChildren();
-    if (!list.length) { root.append(el('p', 'post__state body', empty)); return list; }
+    if (!list.some((p) => p.status !== 'closed')) root.append(el('p', 'post__state body', empty));
     for (const p of list) {
-      const card = el('article', 'post');
+      const closed = p.status === 'closed';
+      const card = el('article', closed ? 'post post--closed' : 'post');
       card.id = `${kind}-${p.slug}`;
       const meta = el('p', 'post__meta mono');
-      meta.textContent = [p.location, p.mode, p.start_date && `Starts ${fmtDate(p.start_date)}`].filter(Boolean).join(' · ');
-      card.append(el('h3', 'post__t', p.title), meta);
-      if (p.summary) card.append(el('p', 'post__s body', p.summary));
-      if (details && p.body) {
+      meta.textContent = [p.location, p.mode, !closed && p.start_date && `Starts ${fmtDate(p.start_date)}`].filter(Boolean).join(' · ');
+      const head = el('div', 'post__head');
+      head.append(el('h3', 'post__t', p.title));
+      if (closed) head.append(el('span', 'post__pill', 'Closed'));
+      card.append(head, meta);
+      if (closed) card.append(el('p', 'post__s body', CLOSED_TEXT[kind]));
+      else if (p.summary) card.append(el('p', 'post__s body', p.summary));
+      if (!closed && details && p.body) {
         const d = el('details', 'post__more');
         d.append(el('summary', '', 'Read the full description'));
         const b = el('div', 'post__body');
@@ -68,7 +80,8 @@ export async function mountPostings({ kind, root, empty, action, onPick, details
       }
       const btn = el('button', 'btn btn--sm post__go', action);
       btn.type = 'button';
-      btn.addEventListener('click', () => onPick(p));
+      if (closed) { btn.disabled = true; btn.setAttribute('aria-describedby', `${card.id}-closed`); card.querySelector('.post__s')!.id = `${card.id}-closed`; }
+      else btn.addEventListener('click', () => onPick(p));
       card.append(btn);
       root.append(card);
     }

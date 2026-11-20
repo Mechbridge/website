@@ -1,0 +1,84 @@
+/* Mechbridge sign-in screen for Roundcube (Elastic skin). Loaded by the mechbridge plugin on the login page only. */
+html, body.task-login {
+  background: #0D1523 radial-gradient(1200px 600px at 15% -10%, rgba(177, 23, 34, .18), transparent 60%), radial-gradient(900px 600px at 110% 110%, rgba(240, 225, 206, .07), transparent 60%) !important;
+  color: #F0E1CE;
+  min-height: 100%;
+}
+body.task-login { font-family: Geist, "Segoe UI", Roboto, Arial, sans-serif; }
+body.task-login #layout,
+body.task-login #layout-content,
+body.task-login #layout > div { background: transparent !important; border: 0 !important; box-shadow: none !important; }
+body.task-login #layout-content {
+  display: flex !important; flex-direction: column; align-items: center; justify-content: center;
+  min-height: 100vh; padding: 32px 16px !important; overflow: auto;
+}
+
+/* Logo: the cream Mechbridge mark replaces Roundcube's. */
+body.task-login #logo {
+  content: url(logo.svg);
+  display: block; width: 168px !important; height: auto !important; max-width: 60vw; max-height: none !important;
+  margin: 0 auto 26px !important;
+}
+
+/* The card. */
+body.task-login #login-form {
+  position: relative; overflow: hidden; width: min(420px, 100%); max-width: none !important; margin: 0 auto !important;
+  padding: 34px 28px 26px !important; border-radius: 18px;
+  background: #1A2841 !important; border: 1px solid #2C3D5C; color: #F0E1CE;
+  box-shadow: 0 40px 90px -40px rgba(0, 0, 0, .8);
+}
+body.task-login #login-form::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 4px; background: #B11722; }
+body.task-login .mb-login-head { text-align: center; margin: 0 0 22px; }
+body.task-login .mb-login-head h2 { margin: 0; font-size: 1.6rem; line-height: 1.1; font-weight: 800; letter-spacing: -.01em; color: #F0E1CE; }
+body.task-login .mb-login-head p { margin: 6px 0 0; color: #B8C1D3; font-size: .9375rem; }
+
+body.task-login #login-form table,
+body.task-login #login-form tbody,
+body.task-login #login-form tr,
+body.task-login #login-form td { display: block; width: 100%; border: 0; padding: 0; background: none; }
+body.task-login #login-form tr { margin-bottom: 12px; }
+body.task-login #login-form td.title { display: block; margin-bottom: 6px; font-size: .8125rem; font-weight: 600; color: #D6DCE7; text-align: left; }
+body.task-login #login-form td.title label { color: inherit; }
+
+body.task-login #login-form input.form-control,
+body.task-login #login-form input[type="text"],
+body.task-login #login-form input[type="password"],
+body.task-login #login-form input[type="email"] {
+  height: 52px; width: 100%; padding: 0 16px; border-radius: 12px !important;
+  background: #0D1523 !important; color: #F0E1CE !important; border: 1px solid #3A4C6E !important;
+  font-size: 1rem; box-shadow: none !important; transition: border-color .2s, box-shadow .2s;
+}
+body.task-login #login-form input::placeholder { color: #7F8BA3; opacity: 1; }
+body.task-login #login-form input:focus { outline: none; border-color: #F0E1CE !important; box-shadow: 0 0 0 3px rgba(240, 225, 206, .18) !important; }
+body.task-login #login-form .input-group { flex-wrap: nowrap; }
+body.task-login #login-form .input-group-text {
+  height: 52px; background: #0D1523 !important; color: #9BA7BE !important; border: 1px solid #3A4C6E !important; border-right: 0 !important;
+  border-radius: 12px 0 0 12px !important;
+}
+body.task-login #login-form .input-group .input-group-prepend + input.form-control,
+body.task-login #login-form .input-group .input-group-prepend ~ input { border-radius: 0 12px 12px 0 !important; border-left: 0 !important; }
+
+body.task-login #login-form .formbuttons { margin: 18px 0 0 !important; padding: 0 !important; }
+body.task-login #rcmloginsubmit {
+  width: 100%; height: 52px; margin: 0; border-radius: 12px; border: 1px solid #B11722 !important;
+  background: #B11722 !important; color: #FBF8F3 !important; font-size: 1rem; font-weight: 700; letter-spacing: .01em; text-transform: none;
+  transition: background .2s, transform .1s;
+}
+body.task-login #rcmloginsubmit:hover, body.task-login #rcmloginsubmit:focus { background: #8E121B !important; border-color: #8E121B !important; }
+body.task-login #rcmloginsubmit:focus-visible { outline: 3px solid rgba(240, 225, 206, .5); outline-offset: 2px; }
+body.task-login #rcmloginsubmit:active { transform: translateY(1px); }
+
+body.task-login .mb-login-note { max-width: 420px; margin: 18px auto 0; padding: 0 8px; text-align: center; color: #B8C1D3; font-size: .875rem; line-height: 1.55; }
+body.task-login #login-footer { margin-top: 22px; text-align: center; color: #7F8BA3 !important; font-size: .8125rem; }
+body.task-login #login-footer a { color: #E8868D !important; }
+
+/* Error and info messages. */
+body.task-login #messagestack div { border-radius: 12px; }
+
+@media (max-width: 479px) {
+  body.task-login #login-form { padding: 30px 20px 22px !important; }
+  body.task-login #logo { width: 140px !important; margin-bottom: 20px !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  body.task-login #login-form input, body.task-login #rcmloginsubmit { transition: none; }
+}

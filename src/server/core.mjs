@@ -117,6 +117,57 @@ const MIGRATIONS = [
   CREATE INDEX IF NOT EXISTS lead_events_lead ON lead_events(lead_id);
   ALTER TABLE users ADD COLUMN last_login_at TEXT NOT NULL DEFAULT '';
   `,
+  // v3: documentation role and per-person extra permissions (perms, comma-separated);
+  //     postings get 'archived' (hidden) while 'closed' now stays listed as no longer available,
+  //     so existing closed postings become archived to keep them hidden;
+  //     optional certificate details.
+  `
+  CREATE TABLE users_v3 (
+    id INTEGER PRIMARY KEY,
+    email TEXT NOT NULL UNIQUE COLLATE NOCASE,
+    name TEXT NOT NULL,
+    role TEXT NOT NULL CHECK (role IN ('superadmin','hr','training','sales','documentation')),
+    pw_hash TEXT NOT NULL,
+    active INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    last_login_at TEXT NOT NULL DEFAULT '',
+    perms TEXT NOT NULL DEFAULT ''
+  );
+  INSERT INTO users_v3 (id, email, name, role, pw_hash, active, created_at, last_login_at)
+    SELECT id, email, name, role, pw_hash, active, created_at, last_login_at FROM users;
+  DROP TABLE users;
+  ALTER TABLE users_v3 RENAME TO users;
+
+  CREATE TABLE postings_v3 (
+    id INTEGER PRIMARY KEY,
+    kind TEXT NOT NULL CHECK (kind IN ('job','internship','training')),
+    title TEXT NOT NULL,
+    slug TEXT NOT NULL,
+    location TEXT NOT NULL DEFAULT '',
+    mode TEXT NOT NULL DEFAULT '',
+    start_date TEXT NOT NULL DEFAULT '',
+    summary TEXT NOT NULL DEFAULT '',
+    body TEXT NOT NULL DEFAULT '',
+    status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft','open','closed','archived')),
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE (kind, slug)
+  );
+  INSERT INTO postings_v3 (id, kind, title, slug, location, mode, start_date, summary, body, status, created_at, updated_at)
+    SELECT id, kind, title, slug, location, mode, start_date, summary, body, CASE status WHEN 'closed' THEN 'archived' ELSE status END, created_at, updated_at FROM postings;
+  DROP TABLE postings;
+  ALTER TABLE postings_v3 RENAME TO postings;
+
+  ALTER TABLE certificates ADD COLUMN period_from TEXT NOT NULL DEFAULT '';
+  ALTER TABLE certificates ADD COLUMN period_to TEXT NOT NULL DEFAULT '';
+  ALTER TABLE certificates ADD COLUMN hours TEXT NOT NULL DEFAULT '';
+  ALTER TABLE certificates ADD COLUMN mode TEXT NOT NULL DEFAULT '';
+  ALTER TABLE certificates ADD COLUMN grade TEXT NOT NULL DEFAULT '';
+  ALTER TABLE certificates ADD COLUMN modules TEXT NOT NULL DEFAULT '';
+  ALTER TABLE certificates ADD COLUMN remarks TEXT NOT NULL DEFAULT '';
+  ALTER TABLE certificates ADD COLUMN signatory_name TEXT NOT NULL DEFAULT '';
+  ALTER TABLE certificates ADD COLUMN signatory_title TEXT NOT NULL DEFAULT '';
+  `,
 ];
 
 function migrate(db) {

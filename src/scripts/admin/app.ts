@@ -1,17 +1,19 @@
-// Mechbridge staff portal. Hash routes: #/ #/leads #/job #/internship #/training #/certificates #/mailboxes #/users #/account
+// Mechbridge staff portal. Hash routes: #/ #/leads #/job #/internship #/training #/certificates #/drafter #/mailboxes #/users #/account
 // Filters live in the hash query (#/leads?status=new&page=2) so views survive a refresh and can be shared.
 // Lists are paged on the server. Text from the database is only ever set with textContent.
 import { api, ApiError } from '../../lib/api/client';
 import { DEMO_ACCOUNTS, DEMO_PASSWORD, resetDemo } from '../../lib/api/demo';
 import type {
-  Certificate, Lead, LeadFilter, LeadStatus, LeadType, MailboxList, Posting, PostingKind, PostingStatus, StaffRef, User,
+  Certificate, Lead, LeadFilter, LeadStatus, LeadType, MailboxList, Perm, Posting, WebmailSettings, PostingKind, PostingStatus, StaffRef, User,
 } from '../../lib/api/types';
 import { PAGE_SIZES } from '../../lib/api/types';
 import {
   ROLE_LABELS, ROLE_NOTES, LEAD_TYPE_LABELS, POSTING_LABELS, LEAD_STATUSES, LEAD_STATUS_LABELS, LEAD_STATUS_NOTES,
   leadTypesFor, postingKindsFor, canManageCertificates, canManageUsers, canSeeLeads, canManageMailboxes,
-  mailAddress, mailAddressError, mailPasswordError,
+  MAIL_DOMAIN, mailAddress, mailAddressError, mailPasswordError, mailNameError, PERMS, hasPerm, POSTING_STATUSES, POSTING_STATUS_LABELS,
+  WEBMAIL_LANGUAGES, WEBMAIL_TIMEZONES,
 } from '../../lib/roles';
+import { draftEmailHtml, draftEmailText, signatureHtml, type Signature } from '../../lib/mail-html';
 import { u } from '../../lib/url';
 
 /* ================= tiny DOM helper ================= */
@@ -69,16 +71,16 @@ function sheet(title: string, body: Node[], foot: Node[]) {
   return { dlg, close };
 }
 // Small prompt in a sheet: resolves with the entered text, or null if cancelled.
-function ask(title: string, label: string, opts: { hint?: string; placeholder?: string; suggestions?: string[]; confirm?: string; danger?: boolean } = {}) {
+function ask(title: string, label: string, opts: { hint?: string; placeholder?: string; suggestions?: string[]; confirm?: string; danger?: boolean; value?: string; allowEmpty?: boolean } = {}) {
   return new Promise<string | null>((resolve) => {
     const listId = id();
-    const input = h('input', { id: id(), placeholder: opts.placeholder ?? '', list: opts.suggestions?.length ? listId : undefined, autocomplete: 'off' });
+    const input = h('input', { id: id(), placeholder: opts.placeholder ?? '', list: opts.suggestions?.length ? listId : undefined, autocomplete: 'off', value: opts.value ?? '' });
     const dl = opts.suggestions?.length ? h('datalist', { id: listId }, ...opts.suggestions.map((s) => h('option', { value: s }))) : null;
     const err = h('p', { class: 'adm-error', role: 'alert' });
     let done = false;
     const ok = h('button', { class: `btn btn--sm ${opts.danger ? 'btn--danger' : ''}`, type: 'button' }, opts.confirm ?? 'Confirm');
     const s = sheet(title, [field(label, input, opts.hint), dl, err].filter(Boolean) as Node[], [h('button', { class: 'btn btn--quiet btn--sm', type: 'button', onclick: () => s.close() }, 'Cancel'), ok]);
-    const submit = () => { if (!input.value.trim()) { err.textContent = 'This can’t be empty.'; input.focus(); return; } done = true; resolve(input.value.trim()); s.close(); };
+    const submit = () => { if (!opts.allowEmpty && !input.value.trim()) { err.textContent = 'This can’t be empty.'; input.focus(); return; } done = true; resolve(input.value.trim()); s.close(); };
     ok.addEventListener('click', submit);
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); submit(); } });
     s.dlg.addEventListener('close', () => { if (!done) resolve(null); });
@@ -152,6 +154,7 @@ function navFor(user: User): NavEntry[] {
     { hash: 'internship', label: 'Internships', show: kinds.includes('internship') },
     { hash: 'training', label: 'Training batches', show: kinds.includes('training') },
     { hash: 'certificates', label: 'Certificates', show: canManageCertificates(user.role) },
+    { hash: 'drafter', label: 'Mail drafter', show: hasPerm(user, 'drafter') },
     { hash: 'mailboxes', label: 'Mailboxes', show: canManageMailboxes(user.role) },
     { hash: 'users', label: 'Staff accounts', show: canManageUsers(user.role) },
     { hash: 'account', label: 'My account', show: true },
@@ -166,7 +169,7 @@ function renderShell() {
   if (r !== lastRoute) lastRoute = r;
   const main = h('main', { class: 'adm-main', id: 'adm-main', tabindex: '-1' });
   const shell = h('div', { class: 'adm' });
-  const side = h('aside', { class: 'adm-side' },
+  const side = h('aside', { class: 'adm-side', id: 'adm-side' },
     h('a', { class: 'adm-side__brand', href: u('/') }, markSvg.cloneNode(true), h('span', {}, h('b', {}, 'Mechbridge'), h('small', {}, 'Staff portal'))),
     h('nav', { class: 'adm-nav', 'aria-label': 'Portal' }, ...nav.map((n) => h('a', { href: `#/${n.hash}`, 'aria-current': n.hash === r ? 'page' : undefined, onclick: () => shell.classList.remove('nav-open') }, n.label))),
     h('div', { class: 'adm-side__foot' },
@@ -176,15 +179,42 @@ function renderShell() {
   );
   shell.append(side, main);
   root.replaceChildren(shell);
-  main.append(h('button', { class: 'btn btn--quiet btn--xs adm-burger', type: 'button', onclick: () => shell.classList.toggle('nav-open') }, 'Menu'));
+  // Phones and tablets: a top bar with the menu button and the current page; the sidebar slides in over a scrim.
+  const burger = h('button', { class: 'adm-top__menu', type: 'button', 'aria-label': 'Open menu', 'aria-expanded': 'false', 'aria-controls': 'adm-side' },
+    h('span', { 'aria-hidden': 'true' }), h('span', { 'aria-hidden': 'true' }), h('span', { 'aria-hidden': 'true' }));
+  const setNav = (on: boolean) => {
+    shell.classList.toggle('nav-open', on);
+    burger.setAttribute('aria-expanded', String(on));
+    burger.setAttribute('aria-label', on ? 'Close menu' : 'Open menu');
+    if (on) side.querySelector<HTMLElement>('[aria-current="page"], a')?.focus();
+  };
+  burger.addEventListener('click', () => setNav(!shell.classList.contains('nav-open')));
+  shell.addEventListener('keydown', (e) => { if (e.key === 'Escape' && shell.classList.contains('nav-open')) { setNav(false); burger.focus(); } });
+  shell.append(h('button', { class: 'adm-scrim', type: 'button', tabindex: '-1', 'aria-hidden': 'true', onclick: () => setNav(false) }));
+  main.append(h('div', { class: 'adm-top' }, burger,
+    h('a', { class: 'adm-top__brand', href: '#/', 'aria-label': 'Overview' }, markSvg.cloneNode(true)),
+    h('span', { class: 'adm-top__title' }, nav.find((n) => n.hash === r)?.label ?? 'Overview')));
   if (api.demo) main.append(h('div', { class: 'adm-banner' }, 'Demo portal: everything you do here is saved only in this browser.', h('button', { type: 'button', onclick: () => { if (confirm('Reset the demo data to its starting state?')) { resetDemo(); location.reload(); } } }, 'Reset demo data')));
   const view = h('div', {});
   main.append(view);
   const views: Record<string, (el: HTMLElement) => Promise<void> | void> = {
     '': overview, leads, job: (el) => postings(el, 'job'), internship: (el) => postings(el, 'internship'), training: (el) => postings(el, 'training'),
-    certificates, mailboxes, users, account,
+    certificates, drafter, mailboxes, users, account,
   };
-  Promise.resolve(views[r](view)).catch(handleErr(view));
+  Promise.resolve(views[r](view)).then(() => view.querySelectorAll<HTMLElement>('.adm-filters').forEach(foldFilters)).catch(handleErr(view));
+}
+// On phones the filter fields (apart from search) hide behind a "Filters" button that shows how many are on.
+function foldFilters(f: HTMLElement) {
+  const fields = Array.from(f.children).filter((c) => !c.classList.contains('adm-filters__q'));
+  if (fields.length < 2 || f.querySelector('.adm-filters__toggle')) return;
+  const btn = h('button', { class: 'btn btn--quiet btn--sm adm-filters__toggle', type: 'button', 'aria-expanded': 'false' });
+  const count = () => Array.from(f.querySelectorAll('select')).filter((x) => x.selectedIndex > 0 && !x.closest('.adm-filters__end')).length;
+  const label = () => { const n = count(); btn.textContent = `${f.classList.contains('is-open') ? 'Hide filters' : 'Filters'}${n ? ` · ${n} on` : ''}`; };
+  btn.addEventListener('click', () => { f.classList.toggle('is-open'); btn.setAttribute('aria-expanded', String(f.classList.contains('is-open'))); label(); });
+  f.addEventListener('change', label);
+  const q = f.querySelector('.adm-filters__q');
+  q ? q.after(btn) : f.prepend(btn);
+  label();
 }
 const handleErr = (view: HTMLElement) => (e: unknown) => {
   if (e instanceof ApiError && e.status === 401) { me = null; renderLogin(e.message); return; }
@@ -263,14 +293,14 @@ class Selection {
       this.last = index;
       this.onChange();
     });
-    return cb;
+    return h('label', { class: 'adm-hit' }, cb);
   }
   all(rowIds: number[]) {
     const allOn = rowIds.length > 0 && rowIds.every((i) => this.ids.has(i));
     const cb = h('input', { type: 'checkbox', 'aria-label': 'Select all on this page', checked: allOn });
     if (!allOn && rowIds.some((i) => this.ids.has(i))) cb.indeterminate = true;
     cb.addEventListener('click', () => { rowIds.forEach((i) => (cb.checked ? this.ids.add(i) : this.ids.delete(i))); this.last = -1; this.onChange(); });
-    return cb;
+    return h('label', { class: 'adm-hit adm-hit--all' }, cb, h('span', { class: 'adm-hit__txt' }, 'Select all on this page'));
   }
   clear() { this.ids.clear(); this.last = -1; this.onChange(); }
   list() { return [...this.ids]; }
@@ -303,8 +333,14 @@ function syncRows(wrap: HTMLElement, rowIds: number[], sel: Selection) {
     head.indeterminate = n > 0 && n < rowIds.length;
   }
 }
-const tableEl = (cols: (string | Node)[], body: HTMLTableSectionElement) =>
-  h('table', { class: 'adm-table' }, h('thead', {}, h('tr', {}, ...cols.map((c) => h('th', { scope: 'col' }, c)))), body);
+const tableEl = (cols: (string | Node)[], body: HTMLTableSectionElement) => {
+  body.querySelectorAll('tr').forEach((tr) => Array.from(tr.children).forEach((td, i) => {
+    if (!td.hasAttribute('data-label')) td.setAttribute('data-label', typeof cols[i] === 'string' ? (cols[i] as string) : '');
+    // One wrapper per cell keeps multi-line content together in the phone card layout.
+    if (!td.classList.contains('actions') && !td.classList.contains('sel') && td.childNodes.length > 1) td.replaceChildren(h('div', { class: 'adm-cell' }, ...Array.from(td.childNodes)));
+  }));
+  return h('table', { class: 'adm-table' }, h('thead', {}, h('tr', {}, ...cols.map((c) => h('th', { scope: 'col' }, c)))), body);
+};
 
 /* ================= overview ================= */
 async function overview(el: HTMLElement) {
@@ -548,7 +584,7 @@ async function postings(el: HTMLElement, kind: PostingKind) {
   const st = { status: (q.status ?? '') as PostingStatus | '', q: q.q ?? '', sort: q.sort ?? '', range: q.range ?? '', from: q.from ?? '', to: q.to ?? '', page: Number(q.page) || 1, pageSize: Number(q.pageSize) || 25 };
   resolveRange(st);
   const add = h('button', { class: 'btn btn--sm', type: 'button', onclick: () => postingSheet(kind, null, () => go()) }, `New ${L.one.toLowerCase()}`);
-  el.append(head(L.many, `Open items appear on the ${PUBLIC_PAGE[kind].slice(1)} page straight away. Drafts and closed items stay hidden.`, add));
+  el.append(head(L.many, `Open items appear on the ${PUBLIC_PAGE[kind].slice(1)} page straight away. Closed ones stay listed there as no longer available. Drafts and archived items are hidden.`, add));
   const tabsBox = h('div', {}), filters = h('div', { class: 'adm-filters' }), bulkBox = h('div', {}), wrap = h('div', { class: 'adm-table-wrap' }), pagerBox = h('div', {});
   el.append(tabsBox, filters, bulkBox, wrap, pagerBox);
   const sel = new Selection(() => renderBulk());
@@ -570,6 +606,7 @@ async function postings(el: HTMLElement, kind: PostingKind) {
     tabsBox.replaceChildren(tabs([
       { value: '', label: 'All', count: res.counts.all }, { value: 'open', label: 'Open', count: res.counts.open },
       { value: 'draft', label: 'Draft', count: res.counts.draft }, { value: 'closed', label: 'Closed', count: res.counts.closed },
+      { value: 'archived', label: 'Archived', count: res.counts.archived },
     ], st.status, (v) => { st.status = v as PostingStatus; go(1); }));
     renderRows();
     pagerBox.replaceChildren(pager(res.total, res.page, res.pageSize, (p, s) => go(p, s)));
@@ -587,7 +624,7 @@ async function postings(el: HTMLElement, kind: PostingKind) {
       h('td', {}, p.applicants ? h('a', { class: 'link', href: `#/leads?ref=${p.id}` }, plural(p.applicants, kind === 'training' ? 'enquiry' : 'application', kind === 'training' ? 'enquiries' : 'applications')) : h('span', { class: 'muted' }, '0')),
       h('td', { class: 'muted nowrap', title: fmtTime(p.updated_at) }, ago(p.updated_at)),
       h('td', { class: 'actions' },
-        p.status === 'open' ? h('a', { class: 'btn btn--quiet btn--xs', href: u(`${PUBLIC_PAGE[kind]}#${kind}-${p.slug}`), target: '_blank', rel: 'noopener' }, 'View') : null,
+        p.status === 'open' || p.status === 'closed' ? h('a', { class: 'btn btn--quiet btn--xs', href: u(`${PUBLIC_PAGE[kind]}#${kind}-${p.slug}`), target: '_blank', rel: 'noopener' }, 'View') : null,
         h('button', { class: 'btn btn--quiet btn--xs', type: 'button', onclick: async () => { try { await api.duplicatePosting(p.id); toast('Duplicated as a draft'); go(); } catch (e) { toast(errMsg(e), true); } } }, 'Duplicate'),
         h('button', { class: 'btn btn--quiet btn--xs', type: 'button', onclick: () => postingSheet(kind, p, () => go()) }, 'Edit')),
     )));
@@ -602,7 +639,8 @@ async function postings(el: HTMLElement, kind: PostingKind) {
     };
     bulkBox.replaceChildren(bulkBar(sel,
       h('button', { class: 'btn btn--sm', type: 'button', onclick: () => run({ action: 'status', value: 'open' }, 'published') }, 'Publish'),
-      h('button', { class: 'btn btn--quiet btn--sm', type: 'button', onclick: () => run({ action: 'status', value: 'closed' }, 'closed') }, 'Close'),
+      h('button', { class: 'btn btn--quiet btn--sm', type: 'button', title: 'Still listed on the website, marked no longer available', onclick: () => run({ action: 'status', value: 'closed' }, 'closed') }, 'Close'),
+      h('button', { class: 'btn btn--quiet btn--sm', type: 'button', title: 'Hidden from the website', onclick: () => run({ action: 'status', value: 'archived' }, 'archived') }, 'Archive'),
       h('button', { class: 'btn btn--quiet btn--sm', type: 'button', onclick: () => run({ action: 'status', value: 'draft' }, 'moved to draft') }, 'Move to draft'),
       h('button', { class: 'btn btn--danger btn--sm', type: 'button', onclick: () => { if (confirm(`Delete ${plural(ids.length, 'item')}? Applications already received stay in Leads.`)) run({ action: 'delete' }, 'deleted'); } }, 'Delete'),
     ));
@@ -618,7 +656,7 @@ function postingSheet(kind: PostingKind, p: Posting | null, reload: () => Promis
   const start = h('input', { id: id(), type: 'date', value: p?.start_date ?? '' });
   const summary = h('input', { id: id(), value: p?.summary ?? '', maxlength: '400' });
   const body = h('textarea', { id: id(), rows: '10' }, p?.body ?? '');
-  const status = h('select', { id: id() }, ...(['draft', 'open', 'closed'] as const).map((s) => h('option', { value: s, selected: (p?.status ?? 'draft') === s }, { draft: 'Draft (hidden)', open: 'Open (published)', closed: 'Closed (hidden)' }[s])));
+  const status = h('select', { id: id() }, ...POSTING_STATUSES.map((s) => h('option', { value: s, selected: (p?.status ?? 'draft') === s }, `${POSTING_STATUS_LABELS[s].label}: ${POSTING_STATUS_LABELS[s].note.toLowerCase()}`)));
   const err = h('p', { class: 'adm-error', role: 'alert' });
   const save = h('button', { class: 'btn btn--sm', type: 'button' }, p ? 'Save changes' : `Create ${L.one.toLowerCase()}`);
   const del = p ? h('button', { class: 'btn btn--danger btn--sm', type: 'button' }, 'Delete') : null;
@@ -626,6 +664,7 @@ function postingSheet(kind: PostingKind, p: Posting | null, reload: () => Promis
     field('Title', title),
     h('div', { class: 'form__row' }, field('Location', location), field('Format', mode)),
     h('div', { class: 'form__row' }, field(kind === 'job' ? 'Start date (optional)' : 'Start date', start), field('Status', status)),
+    h('p', { class: 'adm-hint' }, `Closed ${L.many.toLowerCase()} show on the website with a Closed label, the line "${kind === 'job' ? 'This job is no longer available.' : kind === 'internship' ? 'This intake is no longer open.' : 'This batch is no longer open.'}" and a disabled button. Choose Archived to hide one completely.`),
     field('One-line summary', summary, 'Shown on the listing card.'),
     field('Full description', body, 'Leave a blank line between paragraphs. Start lines with "- " for a bulleted list; a line just above bullets becomes their heading.'),
     err,
@@ -731,6 +770,27 @@ function certSheet(c: Certificate | null, reload: () => Promise<void> | void) {
   });
   const batch = h('input', { id: id(), value: c?.batch ?? '', placeholder: 'e.g. January 2027 batch' });
   const date = h('input', { id: id(), type: 'date', value: c?.issue_date ?? isoDay(new Date()) });
+  const pFrom = h('input', { id: id(), type: 'date', value: c?.period_from ?? '' });
+  const pTo = h('input', { id: id(), type: 'date', value: c?.period_to ?? '' });
+  const hours = h('input', { id: id(), value: c?.hours ?? '', placeholder: 'e.g. 120 hours', maxlength: '60' });
+  const cmode = h('input', { id: id(), value: c?.mode ?? '', placeholder: 'e.g. Live, instructor-led sessions', maxlength: '80' });
+  const grade = h('input', { id: id(), value: c?.grade ?? '', placeholder: 'e.g. Distinction', maxlength: '60' });
+  const modules = h('textarea', { id: id(), rows: '4', placeholder: 'One per line, up to 12. For example:\nHVAC design\nFirefighting systems\nRevit MEP' }, c?.modules ?? '');
+  const remarks = h('input', { id: id(), value: c?.remarks ?? '', placeholder: 'e.g. Capstone project: MEP design of a G+12 residential tower', maxlength: '200' });
+  const signName = h('input', { id: id(), value: c?.signatory_name ?? '', maxlength: '80' });
+  const signTitle = h('input', { id: id(), value: c?.signatory_title ?? '', placeholder: 'e.g. Head of Training', maxlength: '80' });
+  const anyDetail = !!c && [c.period_from, c.period_to, c.hours, c.mode, c.grade, c.modules, c.remarks, c.signatory_name, c.signatory_title].some(Boolean);
+  const more = h('details', { class: 'adm-more', open: anyDetail },
+    h('summary', {}, 'More details on the certificate (optional)'),
+    h('div', { class: 'adm-more__body' },
+      h('p', { class: 'adm-hint' }, 'Filled-in details are printed on the certificate. Leave any of them empty to keep it off.'),
+      h('div', { class: 'form__row' }, field('Period from', pFrom), field('Period to', pTo)),
+      h('div', { class: 'form__row' }, field('Duration', hours), field('Format', cmode)),
+      h('div', { class: 'form__row' }, field('Result or grade', grade), field('Signatory title', signTitle, 'Printed under the signature line.')),
+      field('Signatory name (optional)', signName, 'Leave empty to print "Authorised signatory" only.'),
+      field('Highlight line', remarks, 'One line under the title.'),
+      field('Modules covered', modules),
+    ));
   const err = h('p', { class: 'adm-error', role: 'alert' });
   const save = h('button', { class: 'btn btn--sm', type: 'button' }, c ? 'Save changes' : 'Issue certificate');
   const extra: Node[] = [];
@@ -759,11 +819,18 @@ function certSheet(c: Certificate | null, reload: () => Promise<void> | void) {
     h('div', { class: 'form__row' }, field('Programme', programme), field('Issue date', date)),
     field('Title', title),
     field('Batch (optional)', batch),
+    more,
     err,
   ], foot);
   save.addEventListener('click', async () => {
     err.textContent = '';
-    const data = { holder_name: holder.value.trim(), programme: programme.value as Certificate['programme'], title: title.value.trim(), batch: batch.value.trim(), issue_date: date.value };
+    const data = {
+      holder_name: holder.value.trim(), programme: programme.value as Certificate['programme'], title: title.value.trim(), batch: batch.value.trim(), issue_date: date.value,
+      period_from: pFrom.value, period_to: pTo.value, hours: hours.value.trim(), mode: cmode.value.trim(), grade: grade.value.trim(),
+      modules: modules.value.split('\n').map((l) => l.trim()).filter(Boolean).slice(0, 12).join('\n'), remarks: remarks.value.trim(),
+      signatory_name: signName.value.trim(), signatory_title: signTitle.value.trim(),
+    };
+    if (data.period_from && data.period_to && data.period_from > data.period_to) { err.textContent = 'The period ends before it starts.'; more.open = true; pTo.focus(); return; }
     if (!data.holder_name) { err.textContent = "Add the holder's name."; holder.focus(); return; }
     save.setAttribute('aria-busy', 'true');
     try {
@@ -813,15 +880,23 @@ async function users(el: HTMLElement) {
         try { await api.updateUser(x.id, { password: pw }); toast('Password reset; their sessions were signed out'); } catch (e) { toast(errMsg(e), true); }
       } }, 'Reset password');
       tbody.append(h('tr', {},
-        h('td', {}, h('b', {}, x.name), h('div', { class: 'muted' }, x.email)),
+        h('td', { class: 'adm-primary' }, h('b', {}, x.name), h('div', { class: 'muted' }, x.email)),
         h('td', {}, x.id === me!.id ? h('span', {}, ROLE_LABELS[x.role], h('span', { class: 'muted' }, ' (you)')) : role),
+        h('td', {}, x.role === 'superadmin' ? h('span', { class: 'muted' }, 'Everything') : h('div', { class: 'adm-perms' }, ...PERMS.map((p) => {
+          const cb = h('input', { type: 'checkbox', checked: x.perms.includes(p.key) });
+          cb.addEventListener('change', async () => {
+            const next = cb.checked ? [...x.perms, p.key] : x.perms.filter((k) => k !== p.key);
+            try { await api.updateUser(x.id, { perms: next }); toast(`${p.label} ${cb.checked ? 'turned on' : 'turned off'} for ${x.name}`); load(); } catch (e) { toast(errMsg(e), true); cb.checked = !cb.checked; }
+          });
+          return h('label', { class: 'adm-check', title: p.note }, cb, p.label);
+        }))),
         h('td', {}, pill(x.active ? 'open' : 'closed', x.active ? 'active' : 'inactive')),
         h('td', { class: 'muted nowrap', title: fmtTime(x.last_login_at ?? '') }, ago(x.last_login_at ?? '')),
         h('td', { class: 'muted nowrap' }, fmt(x.created_at)),
         h('td', { class: 'actions' }, reset, x.id === me!.id ? null : toggle),
       ));
     }
-    wrap.replaceChildren(tableEl(['Name', 'Role', 'Status', 'Last login', 'Added', ''], tbody));
+    wrap.replaceChildren(tableEl(['Name', 'Role', 'Extra access', 'Status', 'Last login', 'Added', ''], tbody));
   }
   await load();
 }
@@ -831,17 +906,22 @@ function userSheet(reload: () => Promise<void> | void) {
   const email = h('input', { id: id(), type: 'email', required: true });
   const role = h('select', { id: id() }, ...(Object.keys(ROLE_LABELS) as User['role'][]).map((r) => h('option', { value: r, selected: r === 'sales' }, `${ROLE_LABELS[r]}: ${ROLE_NOTES[r]}`)));
   const pw = h('input', { id: id(), type: 'text', autocomplete: 'new-password', placeholder: api.demo ? 'Not used in the demo' : 'At least 10 characters' });
+  const permBoxes = PERMS.map((p) => ({ key: p.key, box: h('input', { type: 'checkbox' }), p }));
+  const perms = h('fieldset', { class: 'adm-fieldset' }, h('legend', {}, 'Extra access'),
+    ...permBoxes.map(({ box, p }) => h('label', { class: 'adm-check' }, box, h('span', {}, h('b', {}, p.label), h('span', { class: 'muted' }, ` · ${p.note}`)))),
+    h('p', { class: 'adm-hint' }, 'On top of what the role allows. Superadmins always have it.'));
   const err = h('p', { class: 'adm-error', role: 'alert' });
   const save = h('button', { class: 'btn btn--sm', type: 'button' }, 'Create account');
   const s = sheet('Add a staff account', [
     field('Full name', name), field('Work email', email), field('Role', role),
     field('Temporary password', pw, api.demo ? `Demo accounts all use ${DEMO_PASSWORD}.` : 'Share it privately. They can change it under My account.'),
+    perms,
     err,
   ], [save]);
   save.addEventListener('click', async () => {
     err.textContent = '';
     save.setAttribute('aria-busy', 'true');
-    try { await api.createUser({ name: name.value.trim(), email: email.value.trim(), role: role.value as User['role'], password: pw.value }); toast('Account created'); s.close(); await reload(); }
+    try { await api.createUser({ name: name.value.trim(), email: email.value.trim(), role: role.value as User['role'], password: pw.value, perms: permBoxes.filter((x) => x.box.checked).map((x) => x.key as Perm) }); toast('Account created'); s.close(); await reload(); }
     catch (e) { err.textContent = errMsg(e); } finally { save.removeAttribute('aria-busy'); }
   });
   name.focus();
@@ -889,8 +969,8 @@ async function mailboxes(el: HTMLElement) {
   const add = h('button', { class: 'btn btn--sm', type: 'button' }, 'Create a mailbox');
   const webmailLink = h('a', { class: 'btn btn--quiet btn--sm', href: '#', target: '_blank', rel: 'noopener' }, 'Open webmail');
   el.append(head('Mailboxes', 'Email accounts on @mechbridgegroup.com. Create them, reset passwords and remove them here.', webmailLink, add));
-  const note = h('div', {}), filters = h('div', { class: 'adm-filters' }), wrap = h('div', { class: 'adm-table-wrap' }), aliasBox = h('div', {}), settings = h('div', {});
-  el.append(note, filters, wrap, aliasBox, settings);
+  const note = h('div', {}), filters = h('div', { class: 'adm-filters' }), wrap = h('div', { class: 'adm-table-wrap' }), aliasBox = h('div', {}), settings = h('div', {}), webmailBox = h('div', {});
+  el.append(note, filters, wrap, webmailBox, aliasBox, settings);
   const fQ = h('input', { id: id(), type: 'search', placeholder: 'Address…', value: st.q });
   filters.append(h('div', { class: 'adm-filters__q' }, field('Search', fQ)));
   fQ.addEventListener('input', () => { st.q = fQ.value.trim().toLowerCase(); draw(); });
@@ -916,17 +996,23 @@ async function mailboxes(el: HTMLElement) {
       const tbody = h('tbody', {});
       for (const m of list) {
         tbody.append(h('tr', {},
-          h('td', {}, h('b', { class: 'mono' }, m.address), m.core ? h('div', { class: 'muted' }, 'Website alerts arrive here') : null),
+          h('td', { class: 'adm-primary' }, h('b', { class: 'mono' }, m.address), h('div', { class: m.name ? '' : 'muted' }, m.name || 'No sender name set'), m.core ? h('div', { class: 'muted' }, 'Website alerts arrive here') : null),
           h('td', { class: 'muted nowrap' }, fmtBytes(m.size_bytes)),
           h('td', { class: 'muted nowrap', title: fmtTime(m.created) }, m.created ? fmt(m.created) : 'Before the portal'),
           h('td', { class: 'actions' },
+            h('button', { class: 'btn btn--quiet btn--xs', type: 'button', onclick: async () => {
+              const name = await ask(`Sender name for ${m.address}`, 'Sender name', { value: m.name, allowEmpty: true, placeholder: 'e.g. Ali Khan or Mechbridge Careers', hint: 'Shown as the From name on mail sent from webmail. Leave empty to clear it. It applies the next time they sign in.', confirm: 'Save name' });
+              if (name === null) return;
+              const problem = mailNameError(name); if (problem) { toast(problem, true); return; }
+              try { await api.setMailboxName(m.address, name); toast(name ? 'Sender name saved' : 'Sender name cleared'); load(); } catch (e) { toast(errMsg(e), true); }
+            } }, 'Sender name'),
             h('button', { class: 'btn btn--quiet btn--xs', type: 'button', onclick: () => passwordSheet(data, m.address) }, 'Reset password'),
             h('button', { class: 'btn btn--danger btn--xs', type: 'button', onclick: () => deleteMailboxSheet(m.address, m.core, load) }, 'Delete'),
           ),
         ));
       }
       const total = data.mailboxes.reduce((n, m) => n + m.size_bytes, 0);
-      wrap.replaceChildren(tableEl(['Address', 'Storage', 'Created', ''], tbody), h('p', { class: 'adm-table-foot' }, `${plural(data.mailboxes.length, 'mailbox', 'mailboxes')} · ${fmtBytes(total)} stored`));
+      wrap.replaceChildren(tableEl(['Mailbox', 'Storage', 'Created', ''], tbody), h('p', { class: 'adm-table-foot' }, `${plural(data.mailboxes.length, 'mailbox', 'mailboxes')} · ${fmtBytes(total)} stored`));
     }
     aliasBox.replaceChildren(...(data.aliases.length ? [
       h('h2', { class: 'adm-sub' }, 'Forwarding addresses'),
@@ -934,6 +1020,19 @@ async function mailboxes(el: HTMLElement) {
       h('div', { class: 'adm-table-wrap' }, tableEl(['Address', 'Delivered to'], h('tbody', {}, ...data.aliases.map((a) => h('tr', {}, h('td', { class: 'mono' }, a.from), h('td', { class: 'mono muted' }, a.to)))))),
     ] : []));
     const card = (label: string, value: Node | string, hint: string) => h('div', { class: 'adm-card' }, h('span', {}, label), typeof value === 'string' ? h('p', { class: 'mono' }, value) : value, h('p', { class: 'adm-hint' }, hint));
+    const w = data.settings;
+    const lang = WEBMAIL_LANGUAGES.find((l) => l[0] === w.language)?.[1] ?? w.language;
+    const tz = WEBMAIL_TIMEZONES.find((t) => t[0] === w.timezone)?.[1] ?? w.timezone;
+    webmailBox.replaceChildren(...(data.available ? [
+      h('div', { class: 'adm-subhead' }, h('h2', { class: 'adm-sub' }, 'Webmail settings for everyone'),
+        h('button', { class: 'btn btn--quiet btn--sm', type: 'button', onclick: () => webmailSheet(data, load) }, 'Edit webmail settings')),
+      h('div', { class: 'adm-cards adm-mailset' },
+        card('Language and time', `${lang}`, tz),
+        card('Writing', w.compose_html ? 'HTML' : 'Plain text', `${w.reply_above ? 'Reply above the quote' : 'Reply below the quote'} · drafts saved ${w.autosave_minutes ? `every ${w.autosave_minutes} min` : 'manually'}`),
+        card('Company signature', { off: 'Off', empty: 'Where none is set', always: 'Always' }[w.signature], w.signature === 'off' ? 'People write their own.' : 'Built from each sender name.'),
+        card('Changes in webmail', w.lock ? 'Locked' : 'Allowed', w.lock ? 'People can’t change these settings.' : 'These are the defaults; people can change them.'),
+      ),
+    ] : []));
     settings.replaceChildren(
       h('h2', { class: 'adm-sub' }, 'Settings for mail apps'),
       h('div', { class: 'adm-cards adm-mailset' },
@@ -950,6 +1049,7 @@ async function mailboxes(el: HTMLElement) {
 function mailboxSheet(data: MailboxList, reload: () => Promise<void>) {
   const local = h('input', { id: id(), autocomplete: 'off', spellcheck: 'false', placeholder: 'firstname.lastname', class: 'mono' });
   const pw = passwordField('Password');
+  const sender = h('input', { id: id(), autocomplete: 'off', placeholder: 'e.g. Ali Khan or Mechbridge Careers', maxlength: '80' });
   const err = h('p', { class: 'adm-error', role: 'alert' });
   const out = h('div', {});
   const save = h('button', { class: 'btn btn--sm', type: 'button' }, 'Create mailbox');
@@ -958,6 +1058,7 @@ function mailboxSheet(data: MailboxList, reload: () => Promise<void>) {
     h('div', { class: 'field' }, h('label', { for: local.id }, 'Address'),
       h('div', { class: 'adm-addr' }, local, h('span', { class: 'adm-addr__at mono' }, `@${data.domain}`)),
       h('p', { class: 'adm-hint' }, 'Lowercase letters, numbers, dots, dashes or underscores. Works for a person (firstname@) or a role (accounts@).')),
+    field('Sender name (optional)', sender, 'Shown as the From name on mail sent from webmail.'),
     pw.el, err, out,
   ], [cancel, save]);
   local.addEventListener('input', () => { local.value = local.value.toLowerCase().replace(/@.*$/, '').replace(/\s/g, ''); err.textContent = ''; });
@@ -965,14 +1066,14 @@ function mailboxSheet(data: MailboxList, reload: () => Promise<void>) {
   save.addEventListener('click', async () => {
     err.textContent = '';
     const address = mailAddress(local.value), password = pw.input.value;
-    const problem = (!local.value ? 'Type the part before the @.' : mailAddressError(address)) || mailPasswordError(password);
+    const problem = (!local.value ? 'Type the part before the @.' : mailAddressError(address)) || mailNameError(sender.value.trim()) || mailPasswordError(password);
     if (problem) { err.textContent = problem; return; }
     save.setAttribute('aria-busy', 'true');
     try {
-      const made = await api.createMailbox(local.value, password);
+      const made = await api.createMailbox(local.value, password, sender.value.trim());
       toast(`${made} created`);
       handover(out, made, password, data.webmail, data.domain);
-      local.disabled = true; pw.lock(); save.remove(); cancel.textContent = 'Done';
+      local.disabled = true; sender.disabled = true; pw.lock(); save.remove(); cancel.textContent = 'Done';
       await reload();
     } catch (e) { err.textContent = errMsg(e); } finally { save.removeAttribute('aria-busy'); }
   });
@@ -1022,6 +1123,194 @@ function deleteMailboxSheet(address: string, core: boolean, reload: () => Promis
     catch (e) { err.textContent = errMsg(e); } finally { del.removeAttribute('aria-busy'); }
   });
   confirmIn.focus();
+}
+
+// Preview frame for email HTML: sandboxed (no scripts) so the portal's styles don't leak in or out.
+function mailFrame(title: string) {
+  const frame = h('iframe', { class: 'adm-mailframe', title, sandbox: 'allow-same-origin' }) as HTMLIFrameElement;
+  const set = (html: string) => {
+    // Logos come from this site in the preview, so they show before a deploy; copied mail keeps the live address.
+    const local = html.split(`https://${MAIL_DOMAIN}/logo/`).join(`${location.origin}${u('/logo/')}`);
+    frame.srcdoc = `<!doctype html><html><head><meta charset="utf-8"><base target="_blank"></head><body style="margin:0;padding:20px;background:#ffffff;">${local}</body></html>`;
+  };
+  // Grows with its content (images and fonts can arrive after load).
+  let ro: ResizeObserver | null = null;
+  frame.addEventListener('load', () => {
+    const doc = frame.contentDocument;
+    if (!doc) return;
+    const fit = () => { frame.style.height = `${Math.max(160, doc.documentElement.scrollHeight + 2)}px`; };
+    fit();
+    ro?.disconnect();
+    ro = new ResizeObserver(fit);
+    ro.observe(doc.body);
+  });
+  return { frame, set };
+}
+
+function webmailSheet(data: MailboxList, reload: () => Promise<void>) {
+  const w = data.settings;
+  const sel = (opts: [string, string][], v: string) => h('select', { id: id() }, ...opts.map(([k, l]) => h('option', { value: k, selected: k === v }, l)));
+  const check = (label: string, on: boolean, note?: string) => {
+    const box = h('input', { type: 'checkbox', checked: on });
+    return { box, el: h('label', { class: 'adm-check' }, box, h('span', {}, label, note ? h('span', { class: 'muted' }, ` · ${note}`) : null)) };
+  };
+  const language = sel(WEBMAIL_LANGUAGES, w.language);
+  const timezone = sel(WEBMAIL_TIMEZONES, w.timezone);
+  const layout = sel([['widescreen', 'Three columns'], ['desktop', 'Preview under the list'], ['list', 'List only']], w.layout);
+  const pageSize = sel([['25', '25'], ['50', '50'], ['100', '100'], ['200', '200']], String(w.page_size));
+  const images = sel([['1', 'From people in their contacts'], ['0', 'Never, ask first'], ['3', 'Always']], String(w.show_images));
+  const autosave = sel([['0', 'Off'], ['1', 'Every minute'], ['2', 'Every 2 minutes'], ['5', 'Every 5 minutes'], ['10', 'Every 10 minutes']], String(w.autosave_minutes));
+  const html = check('Write new mail in HTML', w.compose_html, 'needed for the company signature');
+  const above = check('Reply above the quoted message', w.reply_above);
+  const lock = check('Apply to everyone and lock', w.lock, 'people can’t change these in webmail');
+  const signature = sel([['empty', 'Add it where a mailbox has no signature'], ['always', 'Always use the company signature'], ['off', 'Off, people write their own']], w.signature);
+  const sTitle = h('input', { id: id(), value: w.signature_title, maxlength: '120' });
+  const sPhone = h('input', { id: id(), value: w.signature_phone, placeholder: 'e.g. +971 4 000 0000', maxlength: '40' });
+  const sWeb = h('input', { id: id(), value: w.signature_web, maxlength: '80' });
+  const note = h('input', { id: id(), value: w.login_note, maxlength: '200' });
+  const preview = mailFrame('Company signature preview');
+  const sample: Signature = { name: 'Sender name', title: '', company: '', phone: '', email: `name@${data.domain}`, web: '' };
+  const draw = () => preview.set(signature.value === 'off'
+    ? `<p style="font:14px Arial,sans-serif;color:#5B6A86;">No company signature. People set their own in webmail.</p>`
+    : signatureHtml({ ...sample, company: sTitle.value.trim(), phone: sPhone.value.trim(), web: sWeb.value.trim() }));
+  [sTitle, sPhone, sWeb].forEach((x) => x.addEventListener('input', draw));
+  signature.addEventListener('change', draw);
+  draw();
+  const err = h('p', { class: 'adm-error', role: 'alert' });
+  const save = h('button', { class: 'btn btn--sm', type: 'button' }, 'Save for everyone');
+  const s = sheet('Webmail settings for everyone', [
+    h('p', { class: 'adm-hint' }, `These apply to every mailbox at ${data.webmail.replace('https://', '')}. People see them the next time they sign in.`),
+    h('div', { class: 'form__row' }, field('Language', language), field('Time zone', timezone)),
+    h('div', { class: 'form__row' }, field('Layout', layout), field('Messages per page', pageSize)),
+    h('div', { class: 'form__row' }, field('Show pictures in mail', images), field('Save drafts', autosave)),
+    h('fieldset', { class: 'adm-fieldset' }, h('legend', {}, 'Writing'), html.el, above.el),
+    h('fieldset', { class: 'adm-fieldset' }, h('legend', {}, 'Company signature'),
+      field('Signature', signature),
+      field('Line under the name', sTitle),
+      h('div', { class: 'form__row' }, field('Phone (optional)', sPhone), field('Website', sWeb)),
+      h('p', { class: 'adm-hint' }, 'Each person’s sender name and address fill in the top lines.'),
+      preview.frame),
+    field('Note on the webmail sign-in screen', note),
+    h('fieldset', { class: 'adm-fieldset' }, h('legend', {}, 'Who can change them'), lock.el),
+    err,
+  ], [h('button', { class: 'btn btn--quiet btn--sm', type: 'button', onclick: () => s.close() }, 'Cancel'), save]);
+  save.addEventListener('click', async () => {
+    err.textContent = '';
+    save.setAttribute('aria-busy', 'true');
+    const next: WebmailSettings = {
+      language: language.value, timezone: timezone.value, layout: layout.value as WebmailSettings['layout'], page_size: Number(pageSize.value),
+      show_images: Number(images.value) as WebmailSettings['show_images'], autosave_minutes: Number(autosave.value), compose_html: html.box.checked,
+      reply_above: above.box.checked, lock: lock.box.checked, signature: signature.value as WebmailSettings['signature'],
+      signature_title: sTitle.value.trim(), signature_phone: sPhone.value.trim(), signature_web: sWeb.value.trim(), login_note: note.value.trim(),
+    };
+    try { await api.saveWebmailSettings(next); toast('Webmail settings saved for everyone'); s.close(); await reload(); }
+    catch (e) { err.textContent = errMsg(e); } finally { save.removeAttribute('aria-busy'); }
+  });
+}
+
+/* ================= mail drafter (per-person access) ================= */
+const DRAFT_KEY = 'mb-drafter-v1';
+interface DraftState { text: string; letterhead: boolean; sign: boolean; sig: Signature }
+const DRAFT_SAMPLE = `Dear Omar,
+
+Thank you for your enquiry about the HVAC and firefighting design for your G+12 residential tower in Dubai Marina.
+
+Our proposal covers:
+- Heat load calculations and equipment selection
+- Chilled water and ventilation design to IFC stage
+- Sprinkler, hydrant and pump room design to UAE Fire Code
+
+Next steps
+1. Share the architectural drawings in CAD
+2. We confirm the scope and programme within three working days
+
+> We can start as soon as the drawings arrive.
+
+Kind regards,`;
+
+function drafter(el: HTMLElement) {
+  let saved: Partial<DraftState> = {};
+  try { saved = JSON.parse(localStorage.getItem(DRAFT_KEY) ?? '{}'); } catch { /* storage blocked */ }
+  const st: DraftState = {
+    text: saved.text ?? '', letterhead: saved.letterhead ?? false, sign: saved.sign ?? true,
+    sig: { name: me!.name, title: '', company: 'Mechbridge International MEP Consultants', phone: '', email: me!.email, web: 'mechbridgegroup.com', ...(saved.sig ?? {}) },
+  };
+  const text = h('textarea', { id: id(), class: 'adm-drafter__text', rows: '16', placeholder: DRAFT_SAMPLE, spellcheck: 'true' }, st.text);
+  const letter = h('input', { type: 'checkbox', checked: st.letterhead });
+  const sign = h('input', { type: 'checkbox', checked: st.sign });
+  const sigInputs = (['name', 'title', 'company', 'phone', 'email', 'web'] as const).map((k) => [k, h('input', { id: id(), value: st.sig[k], maxlength: '120' })] as const);
+  const sigLabels = { name: 'Name', title: 'Job title', company: 'Company', phone: 'Phone', email: 'Email', web: 'Website' };
+  const preview = mailFrame('Email preview');
+  const copyBtn = h('button', { class: 'btn btn--sm', type: 'button' }, 'Copy for email');
+  const codeBtn = h('button', { class: 'btn btn--quiet btn--sm', type: 'button' }, 'Copy HTML code');
+  const sampleBtn = h('button', { class: 'btn btn--quiet btn--sm', type: 'button' }, 'Try a sample');
+  const clearBtn = h('button', { class: 'btn btn--quiet btn--sm', type: 'button' }, 'Clear');
+
+  const current = () => {
+    st.text = text.value; st.letterhead = letter.checked; st.sign = sign.checked;
+    sigInputs.forEach(([k, i]) => { st.sig[k] = i.value.trim(); });
+    try { localStorage.setItem(DRAFT_KEY, JSON.stringify(st)); } catch { /* storage blocked: still works for this visit */ }
+    const sig = st.sign ? st.sig : null;
+    const source = st.text.trim() ? st.text : DRAFT_SAMPLE;
+    return { html: draftEmailHtml(source, { letterhead: st.letterhead, signature: sig }), plain: draftEmailText(source, sig), empty: !st.text.trim() };
+  };
+  let t: number | undefined;
+  const draw = () => { const c = current(); preview.set(c.html); copyBtn.toggleAttribute('disabled', c.empty); codeBtn.toggleAttribute('disabled', c.empty); };
+  const later = () => { clearTimeout(t); t = window.setTimeout(draw, 150); };
+  [text, ...sigInputs.map(([, i]) => i)].forEach((x) => x.addEventListener('input', later));
+  [letter, sign].forEach((x) => x.addEventListener('change', draw));
+
+  copyBtn.addEventListener('click', async () => {
+    const { html, plain } = current();
+    try {
+      await navigator.clipboard.write([new ClipboardItem({ 'text/html': new Blob([html], { type: 'text/html' }), 'text/plain': new Blob([plain], { type: 'text/plain' }) })]);
+      toast('Copied. Paste it into the body of your email.');
+    } catch {
+      // Older browsers: copy the rendered preview as a selection instead.
+      const box = h('div', { contenteditable: 'true', style: 'position:fixed;left:-9999px;top:0;' });
+      box.innerHTML = html; // built from escaped text only (src/lib/mail-html.ts)
+      document.body.append(box);
+      const range = document.createRange(); range.selectNodeContents(box);
+      const selection = getSelection()!; selection.removeAllRanges(); selection.addRange(range);
+      const ok = document.execCommand('copy');
+      selection.removeAllRanges(); box.remove();
+      toast(ok ? 'Copied. Paste it into the body of your email.' : 'Copy failed. Select the preview and copy it by hand.', !ok);
+    }
+  });
+  codeBtn.addEventListener('click', () => copyText(current().html, 'HTML code copied'));
+  sampleBtn.addEventListener('click', () => { text.value = DRAFT_SAMPLE; draw(); text.focus(); });
+  clearBtn.addEventListener('click', () => { text.value = ''; draw(); text.focus(); });
+
+  el.append(
+    head('Mail drafter', 'Write in plain text. Copy the result and paste it into webmail, Outlook or Gmail in the Mechbridge style.'),
+    h('div', { class: 'adm-drafter' },
+      h('div', { class: 'adm-drafter__in' },
+        field('Your text', text),
+        h('details', { class: 'adm-more' }, h('summary', {}, 'How to format'),
+          h('ul', { class: 'adm-help' },
+            h('li', {}, 'Leave a blank line between paragraphs.'),
+            h('li', {}, 'Start lines with "- " for bullets, or "1. " for numbered steps. A line just above them becomes their heading.'),
+            h('li', {}, 'A short line in CAPITALS, or starting with "# ", becomes a heading.'),
+            h('li', {}, 'Start lines with "> " for a highlighted note.'),
+            h('li', {}, 'Wrap words in **double stars** for bold, or _underscores_ for italics.'),
+            h('li', {}, 'Web and email addresses become links. A line of "---" adds a divider.'))),
+        h('div', { class: 'adm-drafter__opts' },
+          h('label', { class: 'adm-check' }, letter, h('span', {}, 'Letterhead', h('span', { class: 'muted' }, ' · navy header and footer'))),
+          h('label', { class: 'adm-check' }, sign, h('span', {}, 'Signature'))),
+        h('details', { class: 'adm-more' }, h('summary', {}, 'Your signature'),
+          h('div', { class: 'adm-more__body' },
+            h('p', { class: 'adm-hint' }, 'Saved in this browser only. Leave a line empty to keep it off.'),
+            h('div', { class: 'form__row' }, ...sigInputs.slice(0, 2).map(([k, i]) => field(sigLabels[k], i))),
+            field(sigLabels.company, sigInputs[2][1]),
+            h('div', { class: 'form__row' }, ...sigInputs.slice(3, 5).map(([k, i]) => field(sigLabels[k], i))),
+            field(sigLabels.web, sigInputs[5][1]))),
+        h('div', { class: 'btn-row' }, sampleBtn, clearBtn)),
+      h('div', { class: 'adm-drafter__out' },
+        h('div', { class: 'adm-subhead' }, h('h2', { class: 'adm-sub' }, 'Preview'), h('div', { class: 'btn-row' }, codeBtn, copyBtn)),
+        preview.frame,
+        h('p', { class: 'adm-hint' }, 'The preview shows a sample until you type. "Copy for email" keeps the formatting when you paste into the message body. Pictures load from mechbridgegroup.com.'))),
+  );
+  draw();
 }
 
 /* ================= account ================= */

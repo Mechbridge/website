@@ -10,10 +10,10 @@ const args = Object.fromEntries(argv.slice(2).reduce((acc, a, i, all) => (a.star
 const email = String(args.email || '').trim().toLowerCase();
 const name = String(args.name || email.split('@')[0] || '').trim();
 const role = String(args.role || 'superadmin');
-const ROLES = ['superadmin', 'hr', 'training', 'sales'];
+const ROLES = ['superadmin', 'hr', 'training', 'sales', 'documentation'];
 
 if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !ROLES.includes(role)) {
-  console.error('Usage: npm run admin:create -- --email you@mechbridgegroup.com --name "Your Name" --role superadmin|hr|training|sales');
+  console.error('Usage: npm run admin:create -- --email you@mechbridgegroup.com --name "Your Name" --role superadmin|hr|training|sales|documentation');
   exit(1);
 }
 

@@ -1,3 +1,3 @@
 # Lets the website (user "mechbridge") run the mailbox tool as root, and nothing else.
 # Install: sudo install -m 0440 -o root -g root deploy/sudoers-mechbridge /etc/sudoers.d/mechbridge && sudo visudo -c
-mechbridge ALL=(root) NOPASSWD: /usr/local/sbin/mb-mailbox list, /usr/local/sbin/mb-mailbox add *, /usr/local/sbin/mb-mailbox passwd *, /usr/local/sbin/mb-mailbox delete *
+mechbridge ALL=(root) NOPASSWD: /usr/local/sbin/mb-mailbox list, /usr/local/sbin/mb-mailbox add *, /usr/local/sbin/mb-mailbox passwd *, /usr/local/sbin/mb-mailbox delete *, /usr/local/sbin/mb-mailbox name *, /usr/local/sbin/mb-mailbox settings

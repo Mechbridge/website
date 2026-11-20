@@ -6,6 +6,8 @@
 #   sudo mb-mailbox add connect@mechbridgegroup.com      # asks for the password (or reads one line from stdin)
 #   sudo mb-mailbox passwd connect@mechbridgegroup.com   # same
 #   sudo mb-mailbox delete someone@mechbridgegroup.com   # mail is moved to /var/mail/deleted, not erased
+#   sudo mb-mailbox name someone@mechbridgegroup.com     # sender name for webmail, one line from stdin (empty clears it)
+#   sudo mb-mailbox settings < webmail.json              # webmail settings for everyone (read by the Roundcube plugin)
 #
 # The website's staff portal calls this through one sudo rule (deploy/sudoers-mechbridge).
 # Passwords never appear on the command line: they come from the terminal or stdin.
@@ -16,6 +18,8 @@ DOMAIN="mechbridgegroup.com"
 DB=/var/lib/mailboxes
 USERS="$DB/users"          # Dovecot passwd-file: address:{SHA512-CRYPT}hash:::created::
 VMBOX="$DB/vmailbox"       # Postfix virtual_mailbox_maps (texthash)
+NAMES="$DB/names"          # address<TAB>sender name, read by the Roundcube plugin
+SETTINGS="$DB/webmail.json" # webmail settings for everyone, read by the Roundcube plugin
 ALIASES=/etc/postfix/virtual
 VHOSTS=/var/mail/vhosts
 TRASH=/var/mail/deleted
@@ -57,10 +61,18 @@ write_user() { # $1 = created date
   mv -f "$tmp" "$USERS"
 }
 reload_postfix() { postfix reload >/dev/null 2>&1 || true; }
+name_of() { awk -F'\t' -v a="$1" '$1==a {print $2}' "$NAMES"; }
+write_name() { # $1 = name ('' removes it)
+  local tmp
+  tmp="$(mktemp "$DB/.names.XXXXXX")"
+  awk -F'\t' -v a="$addr" '$1!=a' "$NAMES" > "$tmp" || true
+  [[ -n "$1" ]] && printf '%s\t%s\n' "$addr" "$1" >> "$tmp"
+  chmod 0644 "$tmp"; mv -f "$tmp" "$NAMES"
+}
 
 mkdir -p "$DB"; chmod 0755 "$DB"
-touch "$USERS" "$VMBOX"
-chown root:dovecot "$USERS" 2>/dev/null || true; chmod 0640 "$USERS"; chmod 0644 "$VMBOX"
+touch "$USERS" "$VMBOX" "$NAMES"
+chown root:dovecot "$USERS" 2>/dev/null || true; chmod 0640 "$USERS"; chmod 0644 "$VMBOX" "$NAMES"
 exec 9>"$DB/.lock"; flock -w 10 9 || die "Another mailbox change is in progress. Try again."
 
 case "$cmd" in
@@ -69,10 +81,29 @@ case "$cmd" in
       [[ -n "$a" ]] || continue
       dir="$VHOSTS/$DOMAIN/${a%@*}"
       size=0; [[ -d "$dir" ]] && size="$(du -sb "$dir" 2>/dev/null | cut -f1)"
-      printf '%s\t%s\t%s\n' "$a" "${size:-0}" "${created:-}"
+      printf '%s\t%s\t%s\t%s\n' "$a" "${size:-0}" "${created:-}" "$(name_of "$a")"
     done < "$USERS"
     echo "--aliases"
     [[ -f "$ALIASES" ]] && awk '!/^[[:space:]]*#/ && NF>=2 {print $1 "\t" $2}' "$ALIASES" || true
+    echo "--settings"
+    [[ -f "$SETTINGS" ]] && cat "$SETTINGS" || echo "{}"
+    ;;
+  name)
+    valid_addr
+    exists || die "$addr doesn't exist."
+    IFS= read -r nm || true
+    nm="$(printf '%s' "$nm" | tr -s '[:space:]' ' ' | sed 's/^ //; s/ $//')"
+    (( ${#nm} <= 80 )) || die "Keep the name to 80 characters."
+    [[ "$nm" != *[\<\>\"]* ]] || die "The name can't contain quotes or angle brackets."
+    write_name "$nm"
+    echo "OK name set for $addr"
+    ;;
+  settings)
+    tmp="$(mktemp "$DB/.webmail.XXXXXX")"
+    head -c 20000 > "$tmp"
+    python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); assert isinstance(d, dict)' "$tmp" 2>/dev/null || { rm -f "$tmp"; die "The settings aren't valid JSON."; }
+    chmod 0644 "$tmp"; mv -f "$tmp" "$SETTINGS"
+    echo "OK webmail settings saved"
     ;;
   add)
     valid_addr
@@ -100,6 +131,7 @@ case "$cmd" in
     chown root:dovecot "$tmp"; chmod 0640 "$tmp"; mv -f "$tmp" "$USERS"
     tmp="$(mktemp "$DB/.vmbox.XXXXXX")"; grep -v "^${addr} " "$VMBOX" > "$tmp" || true
     chmod 0644 "$tmp"; mv -f "$tmp" "$VMBOX"
+    write_name ""
     if [[ -d "$VHOSTS/$DOMAIN/$local_part" ]]; then
       mkdir -p "$TRASH"; chmod 0700 "$TRASH"
       mv "$VHOSTS/$DOMAIN/$local_part" "$TRASH/${addr}-$(date -u +%Y%m%d-%H%M%S)"
@@ -109,7 +141,7 @@ case "$cmd" in
     echo "OK deleted $addr (mail kept in $TRASH)"
     ;;
   *)
-    echo "Usage: mb-mailbox list | add <address> | passwd <address> | delete <address>" >&2
+    echo "Usage: mb-mailbox list | add <address> | passwd <address> | delete <address> | name <address> | settings" >&2
     exit 2
     ;;
 esac

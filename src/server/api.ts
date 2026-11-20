@@ -6,16 +6,17 @@ import { randomBytes } from 'node:crypto';
 import { dataDir, MIN_PASSWORD } from './core.mjs';
 import * as D from './db';
 import { notifyLead } from './notify';
-import { MailError, listMailboxes, createMailbox, setMailboxPassword, deleteMailbox } from './mail';
-import type { LeadType, LeadFilter, LeadStatus, LeadUpdate, PostingKind, Role, User, PostingInput, CertificateInput } from '../lib/api/types';
-import { canManageCertificates, canManageMailboxes, canManageUsers, leadTypesFor, postingKindsFor, LEAD_TYPE_LABELS, LEAD_STATUSES } from '../lib/roles';
+import { MailError, listMailboxes, createMailbox, setMailboxPassword, deleteMailbox, setMailboxName, saveWebmailSettings } from './mail';
+import type { LeadType, LeadFilter, LeadStatus, LeadUpdate, PostingKind, PostingStatus, Role, User, PostingInput, CertificateInput } from '../lib/api/types';
+import { CERT_DETAIL_FIELDS } from '../lib/api/types';
+import { canManageCertificates, canManageMailboxes, canManageUsers, cleanPerms, leadTypesFor, postingKindsFor, LEAD_TYPE_LABELS, LEAD_STATUSES, POSTING_STATUSES } from '../lib/roles';
 
 export const prerender = false;
 
 const COOKIE = 'mb_session';
 const LEAD_TYPES: LeadType[] = ['consultancy', 'contact', 'training', 'internship', 'job', 'support'];
 const KINDS: PostingKind[] = ['job', 'internship', 'training'];
-const ROLES: Role[] = ['superadmin', 'hr', 'training', 'sales'];
+const ROLES: Role[] = ['superadmin', 'hr', 'training', 'sales', 'documentation'];
 const CV_EXT = ['.pdf', '.doc', '.docx'];
 const CV_MAX = 5 * 1024 * 1024;
 
@@ -59,7 +60,7 @@ function postingInput(b: Record<string, unknown>): PostingInput {
   const p: PostingInput = {
     kind, title: str(b.title, 160), slug: str(b.slug, 80), location: str(b.location, 120), mode: str(b.mode, 60),
     start_date: str(b.start_date, 10), summary: str(b.summary, 400), body: str(b.body, 20000),
-    status: (['draft', 'open', 'closed'].includes(str(b.status)) ? str(b.status) : 'draft') as PostingInput['status'],
+    status: ((POSTING_STATUSES as readonly string[]).includes(str(b.status)) ? str(b.status) : 'draft') as PostingInput['status'],
   };
   if (!p.title) fail(400, 'Add a title.');
   if (!isDate(p.start_date)) fail(400, 'Use a date like 2027-01-15, or leave it empty.');
@@ -69,10 +70,15 @@ function certInput(b: Record<string, unknown>): CertificateInput {
   const c: CertificateInput = {
     holder_name: str(b.holder_name, 120), programme: (str(b.programme) === 'internship' ? 'internship' : 'training'),
     title: str(b.title, 160), batch: str(b.batch, 80), issue_date: str(b.issue_date, 10),
+    period_from: str(b.period_from, 10), period_to: str(b.period_to, 10), hours: str(b.hours, 60), mode: str(b.mode, 80),
+    grade: str(b.grade, 60), modules: str(b.modules, 2000).split('\n').map((l) => l.trim()).filter(Boolean).slice(0, 12).join('\n'),
+    remarks: str(b.remarks, 200), signatory_name: str(b.signatory_name, 80), signatory_title: str(b.signatory_title, 80),
   };
   if (!c.holder_name) fail(400, "Add the holder's full name as it should appear on the certificate.");
   if (!c.title) fail(400, 'Add the course or internship title.');
   if (!c.issue_date || !isDate(c.issue_date)) fail(400, 'Add the issue date, like 2027-01-15.');
+  if (!isDate(c.period_from) || !isDate(c.period_to)) fail(400, 'Use dates like 2027-01-15 for the period, or leave them empty.');
+  if (c.period_from && c.period_to && c.period_from > c.period_to) fail(400, 'The period ends before it starts.');
   return c;
 }
 
@@ -280,8 +286,8 @@ async function handle(ctx: APIContext, parts: string[], method: string): Promise
         if (action === 'delete') return json({ changed: D.bulkPostings(idList(x.ids), kinds, 'delete') });
         if (action === 'status') {
           const v = str(x.value);
-          if (!['draft', 'open', 'closed'].includes(v)) fail(400, 'Choose draft, open or closed.');
-          return json({ changed: D.bulkPostings(idList(x.ids), kinds, 'status', v as 'open') });
+          if (!(POSTING_STATUSES as readonly string[]).includes(v)) fail(400, 'Choose draft, open, closed or archived.');
+          return json({ changed: D.bulkPostings(idList(x.ids), kinds, 'status', v as PostingStatus) });
         }
         fail(400, 'Unknown bulk action.');
       }
@@ -304,7 +310,7 @@ async function handle(ctx: APIContext, parts: string[], method: string): Promise
       });
       if (!c && method === 'GET') return json(D.pageCertificates(cf()));
       if (c === 'export.csv' && method === 'GET') {
-        const cols = ['code', 'holder_name', 'programme', 'title', 'batch', 'issue_date', 'status', 'revoked_reason', 'issued_by', 'created_at'];
+        const cols = ['code', 'holder_name', 'programme', 'title', 'batch', 'issue_date', ...CERT_DETAIL_FIELDS, 'status', 'revoked_reason', 'issued_by', 'created_at'];
         return csv(`mechbridge-certificates-${today()}.csv`, cols, D.exportCertificates(cf()));
       }
       if (!c && method === 'POST') return json(D.issueCertificate(certInput(await body(ctx)), u.name), 201);
@@ -341,7 +347,7 @@ async function handle(ctx: APIContext, parts: string[], method: string): Promise
         if (!name) fail(400, 'Add a name.');
         if (!ROLES.includes(role)) fail(400, 'Choose a role.');
         if (pw.length < MIN_PASSWORD) fail(400, `Use a temporary password of at least ${MIN_PASSWORD} characters.`);
-        try { return json(D.createUser({ email, name, role, password: pw }), 201); } catch { return fail(409, 'An account with that email already exists.'); }
+        try { return json(D.createUser({ email, name, role, password: pw, perms: cleanPerms(x.perms) }), 201); } catch { return fail(409, 'An account with that email already exists.'); }
       }
       const id = Number(c);
       if (method === 'PUT') {
@@ -355,7 +361,7 @@ async function handle(ctx: APIContext, parts: string[], method: string): Promise
         if (losingSuper && D.activeSuperadmins() <= 1) fail(400, 'Keep at least one active superadmin.');
         const pw = x.password ? String(x.password) : undefined;
         if (pw && pw.length < MIN_PASSWORD) fail(400, `Use at least ${MIN_PASSWORD} characters.`);
-        return json(D.updateUser(id, { name: x.name === undefined ? undefined : str(x.name, 120), role, active, password: pw }));
+        return json(D.updateUser(id, { name: x.name === undefined ? undefined : str(x.name, 120), role, active, password: pw, perms: x.perms === undefined ? undefined : cleanPerms(x.perms) }));
       }
     }
 
@@ -367,9 +373,20 @@ async function handle(ctx: APIContext, parts: string[], method: string): Promise
         if (!c && method === 'GET') return json(await listMailboxes());
         if (!c && method === 'POST') {
           const x = await body(ctx);
-          const made = await createMailbox(str(x.local ?? x.address, 200), x.password);
+          const made = await createMailbox(str(x.local ?? x.address, 200), x.password, str(x.name, 200));
           console.log(`[mail] ${u.email} created ${made}`);
           return json({ ok: true, address: made }, 201);
+        }
+        if (c === 'settings' && method === 'PUT') {
+          const saved = await saveWebmailSettings(await body(ctx));
+          console.log(`[mail] ${u.email} changed the webmail settings`);
+          return json(saved);
+        }
+        if (c && d === 'name' && method === 'PUT') {
+          const x = await body(ctx);
+          const done = await setMailboxName(address, str(x.name, 200));
+          console.log(`[mail] ${u.email} renamed ${done}`);
+          return json({ ok: true, address: done });
         }
         if (c && d === 'password' && method === 'POST') {
           const x = await body(ctx);
