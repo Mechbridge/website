@@ -1,0 +1,15 @@
+---
+import Admin from '../../layouts/Admin.astro';
+import Logo from '../../components/Logo.astro';
+---
+<Admin title="Staff portal">
+  <template id="admin-mark"><Logo variant="mark" /></template>
+  <div id="admin" aria-live="polite">
+    <p class="adm-empty">Loading the staff portal…</p>
+  </div>
+  <noscript><p class="adm-empty">The staff portal needs JavaScript.</p></noscript>
+</Admin>
+
+<script>
+  import '../../scripts/admin/app';
+</script>

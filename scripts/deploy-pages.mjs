@@ -1,4 +1,5 @@
-// Builds the review preview for GitHub Pages and pushes it to the gh-pages branch.
+// Builds the static demo (DEMO=1: no server, data in the browser) for GitHub Pages
+// and pushes it to the gh-pages branch.
 //   npm run deploy:pages
 // The preview lives at https://mechbridge.github.io/website/ (base path /website).
 import { execSync } from 'node:child_process';
@@ -8,7 +9,7 @@ const run = (cmd, opts = {}) => execSync(cmd, { stdio: 'inherit', ...opts });
 const remote = execSync('git remote get-url origin').toString().trim();
 const sha = execSync('git rev-parse --short HEAD').toString().trim();
 
-run('npx astro build', {
+run('node scripts/build-demo.mjs', {
   env: { ...process.env, SITE_URL: 'https://mechbridge.github.io', BASE_PATH: '/website', MSYS_NO_PATHCONV: '1' },
 });
 

@@ -5,27 +5,45 @@ import { nav } from '../data/site';
 interface Props { glass?: boolean }
 const { glass = false } = Astro.props;
 const path = stripBase(Astro.url.pathname).replace(/\/$/, '') || '/';
-const isActive = (href: string) => (href === '/' ? path === '/' : path.startsWith(href));
+const isActive = (href: string) => (href === '/' ? path === '/' : path === href || path.startsWith(href + '/'));
+const services = nav.find((n) => n.children)!;
 ---
 <header class:list={['nav', { 'nav--glass': glass }]} data-nav>
   <div class="nav__bar">
     <a class="nav__brand" href={u('/')} aria-label="Mechbridge International, home">
-      <Logo class="nav__logo" />
-      <span class="nav__sub" aria-hidden="true">International</span>
+      <Logo variant="mark" class="nav__mark" />
+      <span class="nav__name" aria-hidden="true">
+        <span class="nav__title">Mechbridge International</span>
+        <span class="nav__sub">MEP Consultants</span>
+      </span>
     </a>
     <nav class="nav__links" aria-label="Main">
       <ul>
         {nav.map((l) => (
-          <li>
-            <a href={u(l.href)} aria-current={isActive(l.href) ? 'page' : undefined}>
-              {l.label}
-              {l.badge && <span class="nav__badge dot live">{l.badge}</span>}
-            </a>
+          <li class:list={{ 'has-panel': !!l.children }}>
+            {l.children ? (
+              <>
+                <button type="button" class="nav__link" aria-expanded="false" aria-controls="svc-panel" data-panel-toggle aria-current={isActive(l.href) ? 'page' : undefined}>
+                  {l.label}<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+                <div class="panel" id="svc-panel" data-panel hidden>
+                  <ul class="panel__grid">
+                    {l.children.map((c) => (
+                      <li><a href={u(c.href)} aria-current={path === c.href ? 'page' : undefined}><span class="panel__t">{c.label}</span><span class="panel__n">{c.note}</span></a></li>
+                    ))}
+                  </ul>
+                  <a class="panel__all link" href={u('/services')}>All services</a>
+                </div>
+              </>
+            ) : (
+              <a class="nav__link" href={u(l.href)} aria-current={isActive(l.href) ? 'page' : undefined}>{l.label}</a>
+            )}
           </li>
         ))}
       </ul>
     </nav>
-    <a class="btn btn--sm nav__cta" href={u('/training#enquire')}>Enquire about training</a>
+    <a class="nav__verify" href={u('/verify')}>Verify a certificate</a>
+    <a class="btn btn--sm nav__cta" href={u('/contact?topic=consultancy')}>Request a proposal</a>
     <button class="nav__toggle" type="button" aria-expanded="false" aria-controls="menu" data-menu-toggle>
       <span class="sr-only" data-menu-label>Open menu</span>
       <span class="nav__burger" aria-hidden="true"><i></i><i></i></span>
@@ -36,16 +54,19 @@ const isActive = (href: string) => (href === '/' ? path === '/' : path.startsWit
       <ul>
         {nav.map((l, i) => (
           <li style={`--i:${i}`}>
-            <a href={u(l.href)} aria-current={isActive(l.href) ? 'page' : undefined}>
-              <span>{l.label}</span>
-              {l.badge && <span class="nav__badge dot live">{l.badge}</span>}
-            </a>
+            <a href={u(l.href)} aria-current={isActive(l.href) ? 'page' : undefined}><span>{l.label}</span></a>
+            {l.children && (
+              <ul class="menu__sub">
+                {l.children.map((c) => <li><a href={u(c.href)}>{c.label}</a></li>)}
+              </ul>
+            )}
           </li>
         ))}
       </ul>
     </nav>
     <div class="menu__foot">
-      <a class="btn" href={u('/training#enquire')}>Enquire about training</a>
+      <a class="btn" href={u('/contact?topic=consultancy')}>Request a proposal</a>
+      <a class="link" href={u('/verify')}>Verify a certificate</a>
       <a class="link" href="mailto:connect@mechbridgegroup.com">connect@mechbridgegroup.com</a>
     </div>
   </div>
@@ -54,8 +75,8 @@ const isActive = (href: string) => (href === '/' ? path === '/' : path.startsWit
 <style>
   .nav { position: fixed; inset: 0 0 auto; z-index: 100; color: var(--cream-300); pointer-events: none; }
   .nav__bar {
-    pointer-events: auto;
-    display: flex; align-items: center; gap: clamp(16px, 3vw, 40px);
+    pointer-events: auto; position: relative;
+    display: flex; align-items: center; gap: clamp(12px, 2vw, 32px);
     height: var(--nav-h); padding-inline: var(--gutter);
     background: var(--navy-800); border-bottom: 1px solid var(--navy-600);
     transition: background-color .4s var(--ease), border-color .4s var(--ease), height .3s var(--ease);
@@ -67,24 +88,48 @@ const isActive = (href: string) => (href === '/' ? path === '/' : path.startsWit
   }
   :global(.menu-open) .nav__bar { background: var(--navy-900); }
   .nav.is-scrolled .nav__bar { height: 64px; }
-  .nav__brand { display: flex; align-items: center; gap: 14px; text-decoration: none; color: var(--cream-300); min-height: 44px; }
-  .nav__brand :global(.nav__logo) { height: 46px; width: auto; transition: height .3s var(--ease); }
-  .nav.is-scrolled .nav__brand :global(.nav__logo) { height: 40px; }
-  .nav__sub { font-family: var(--f-mono); font-size: .6875rem; letter-spacing: .22em; text-transform: uppercase; padding-left: 14px; border-left: 1px solid rgb(240 225 206 / .3); line-height: 1.2; }
+
+  .nav__brand { display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--cream-300); min-height: 44px; flex: none; }
+  .nav__brand :global(.nav__mark) { height: 40px; width: auto; transition: height .3s var(--ease); }
+  .nav.is-scrolled .nav__brand :global(.nav__mark) { height: 34px; }
+  .nav__name { display: grid; line-height: 1.1; padding-left: 12px; border-left: 1px solid rgb(240 225 206 / .28); }
+  .nav__title { font-family: var(--f-display); font-variation-settings: "wdth" 80, "opsz" 24; font-weight: 700; font-size: 1.06rem; letter-spacing: -.005em; white-space: nowrap; }
+  .nav__sub { font-family: var(--f-mono); font-size: .625rem; letter-spacing: .2em; text-transform: uppercase; color: var(--navy-100); margin-top: 3px; }
+
   .nav__links { margin-left: auto; }
-  .nav__links ul { display: flex; gap: 4px; list-style: none; margin: 0; padding: 0; }
-  .nav__links a {
-    position: relative; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px;
-    color: var(--cream-300); text-decoration: none; font-weight: 500; font-size: .9375rem; border-radius: var(--radius);
-    transition: background-color .2s var(--ease);
+  .nav__links > ul { display: flex; gap: 2px; list-style: none; margin: 0; padding: 0; }
+  .nav__link {
+    position: relative; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 12px;
+    color: var(--cream-300); background: none; border: 0; cursor: pointer; text-decoration: none;
+    font: 500 .9375rem/1 var(--f-body); border-radius: var(--radius); transition: background-color .2s var(--ease);
   }
-  .nav__links a:hover { background: rgb(240 225 206 / .08); }
-  .nav__links a[aria-current="page"]::after { content: ""; position: absolute; left: 14px; right: 14px; bottom: 6px; height: 2px; background: var(--red-500); }
-  .nav__badge { font-size: .6875rem; text-transform: uppercase; color: var(--red-200); }
+  .nav__link svg { width: 12px; height: 12px; transition: transform .25s var(--ease); }
+  .nav__link[aria-expanded="true"] svg { transform: rotate(180deg); }
+  .nav__link:hover, .nav__link[aria-expanded="true"] { background: rgb(240 225 206 / .08); }
+  .nav__link[aria-current="page"]::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: 6px; height: 2px; background: var(--red-500); }
+
+  .panel {
+    position: absolute; left: var(--gutter); right: var(--gutter); top: calc(100% + 8px);
+    padding: 20px; border-radius: 14px; background: var(--navy-800); border: 1px solid var(--navy-500);
+    box-shadow: 0 30px 60px -30px rgb(8 13 23 / .8);
+  }
+  .panel[hidden] { display: none; }
+  .panel__grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .panel__grid a { display: grid; gap: 6px; padding: 16px; border-radius: 10px; text-decoration: none; color: var(--cream-300); transition: background-color .2s var(--ease); height: 100%; }
+  .panel__grid a:hover, .panel__grid a:focus-visible { background: var(--navy-600); }
+  .panel__grid a[aria-current="page"] { background: var(--navy-700); box-shadow: inset 0 0 0 1px var(--red-400); }
+  .panel__t { font-family: var(--f-display); font-variation-settings: "wdth" 80, "opsz" 32; font-weight: 700; font-size: 1.15rem; line-height: 1.1; }
+  .panel__n { font-size: var(--t-small); color: var(--navy-200); }
+  .panel__all { margin: 10px 0 0 16px; }
+
+  .nav__verify { color: var(--cream-300); font-size: .875rem; font-weight: 500; text-decoration: none; white-space: nowrap; min-height: 44px; display: inline-flex; align-items: center; border-bottom: 1px solid transparent; transition: border-color .2s; }
+  .nav__verify:hover { border-bottom-color: var(--red-300); }
+  .nav__cta { flex: none; }
   .nav__toggle { display: none; }
   .menu { display: none; }
 
-  @media (max-width: 1099px) {
+  @media (max-width: 1399px) { .nav__verify { display: none; } }
+  @media (max-width: 1199px) {
     .nav__links, .nav__cta { display: none; }
     .nav__toggle {
       pointer-events: auto; display: grid; place-items: center; margin-left: auto; width: 48px; height: 48px; color: var(--cream-300);
@@ -96,18 +141,21 @@ const isActive = (href: string) => (href === '/' ? path === '/' : path.startsWit
     .nav__toggle[aria-expanded="true"] .nav__burger i:last-child { transform: translateY(-4px) rotate(-45deg); }
     .menu {
       pointer-events: auto; position: fixed; inset: var(--nav-h) 0 0; display: flex; flex-direction: column; justify-content: space-between;
-      padding: 24px var(--gutter) max(28px, env(safe-area-inset-bottom)); background: var(--navy-900); overflow-y: auto;
+      padding: 16px var(--gutter) max(28px, env(safe-area-inset-bottom)); background: var(--navy-900); overflow-y: auto;
     }
     .menu[hidden] { display: none; }
     .menu ul { list-style: none; margin: 0; padding: 0; }
-    .menu li { border-bottom: 1px solid var(--navy-600); animation: menu-in .5s var(--ease) both; animation-delay: calc(var(--i) * 45ms); }
-    .menu li a { display: flex; align-items: center; justify-content: space-between; min-height: 72px; text-decoration: none; color: var(--cream-300); }
-    .menu li a span:first-child { font-family: var(--f-display); font-variation-settings: "wdth" 75, "opsz" 96; font-weight: 760; font-size: clamp(2.2rem, 10vw, 3.4rem); line-height: 1; letter-spacing: -.02em; }
-    .menu li a[aria-current="page"] span:first-child { color: var(--red-300); }
-    .menu__foot { display: grid; gap: 12px; margin-top: 32px; }
+    .menu > nav > ul > li { border-bottom: 1px solid var(--navy-600); animation: menu-in .5s var(--ease) both; animation-delay: calc(var(--i) * 40ms); }
+    .menu > nav > ul > li > a { display: flex; align-items: center; min-height: 64px; text-decoration: none; color: var(--cream-300); }
+    .menu > nav > ul > li > a span { font-family: var(--f-display); font-variation-settings: "wdth" 75, "opsz" 96; font-weight: 760; font-size: clamp(2rem, 9vw, 3rem); line-height: 1; letter-spacing: -.02em; }
+    .menu a[aria-current="page"] span { color: var(--red-300); }
+    .menu__sub { padding-bottom: 14px !important; display: grid; }
+    .menu__sub a { display: flex; align-items: center; min-height: 44px; color: var(--navy-100); text-decoration: none; font-size: 1rem; padding-left: 2px; }
+    .menu__sub a:hover { color: var(--cream-300); }
+    .menu__foot { display: grid; gap: 8px; margin-top: 28px; }
     .menu__foot .btn { width: 100%; }
   }
-  @media (max-width: 479px) { .nav__sub { display: none; } .nav__brand :global(.nav__logo) { height: 40px; } }
+  @media (max-width: 479px) { .nav__sub { display: none; } .nav__title { font-size: .98rem; } }
   @keyframes menu-in { from { opacity: 0; transform: translateY(14px); } }
 </style>
 
@@ -124,7 +172,26 @@ const isActive = (href: string) => (href === '/' ? path === '/' : path.startsWit
     (window as any).__smoother?.paused(open);
   };
   btn.addEventListener('click', () => setOpen(btn.getAttribute('aria-expanded') !== 'true'));
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !menu.hidden) { setOpen(false); btn.focus(); } });
   menu.addEventListener('click', (e) => { if ((e.target as HTMLElement).closest('a')) setOpen(false); });
-  matchMedia('(min-width: 1100px)').addEventListener('change', (e) => { if (e.matches) setOpen(false); });
+  matchMedia('(min-width: 1200px)').addEventListener('change', (e) => { if (e.matches) setOpen(false); });
+
+  // Services panel: click or keyboard to open, Escape or outside click to close, hover-intent on fine pointers.
+  const pt = nav.querySelector<HTMLButtonElement>('[data-panel-toggle]');
+  const panel = nav.querySelector<HTMLElement>('[data-panel]');
+  if (pt && panel) {
+    const li = pt.closest('li')!;
+    let timer: number | undefined;
+    let openedAt = 0;
+    const show = (open: boolean) => { if (open && panel.hidden) openedAt = Date.now(); pt.setAttribute('aria-expanded', String(open)); panel.hidden = !open; };
+    // A click right after hover opened the panel should not close it again.
+    pt.addEventListener('click', () => { if (!panel.hidden && Date.now() - openedAt < 500) return; show(panel.hidden); });
+    if (matchMedia('(hover: hover) and (pointer: fine)').matches) {
+      li.addEventListener('mouseenter', () => { clearTimeout(timer); show(true); });
+      li.addEventListener('mouseleave', () => { timer = window.setTimeout(() => show(false), 180); });
+    }
+    li.addEventListener('focusout', (e) => { if (!li.contains(e.relatedTarget as Node)) show(false); });
+    document.addEventListener('click', (e) => { if (!li.contains(e.target as Node)) show(false); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !panel.hidden) { show(false); pt.focus(); } });
+  }
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !menu.hidden) { setOpen(false); btn.focus(); } });
 </script>

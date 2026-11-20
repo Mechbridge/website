@@ -1,37 +1,32 @@
 # Content to confirm before launch
 
-The site doesn't invent numbers, names or credentials. Everything below is either missing or written as a reasonable draft that someone at Mechbridge must check.
+The site doesn't invent numbers, names or credentials. These items are missing, or are drafts someone at Mechbridge must check.
 
 ## Facts to supply
 
-| What | Where it shows | Current text |
+| What | Where it shows | Now |
 |---|---|---|
-| Course duration per track | `/training/<track>`, "Duration" row | "To be confirmed" (`src/pages/training/[slug].astro`) |
-| Fees and next start dates | Training FAQ answer | "Fees and dates depend on the track and format. Send an enquiry…" (`src/pages/training/index.astro`) |
-| Trainer names (4) | `/training`, trainer cards | "Name to come" (`trainers` array in `src/pages/training/index.astro`) |
-| Leadership names and roles (3) | `/about` | "Name to come" / "Role to come" (`src/pages/about.astro`) |
-| Office addresses (Dubai, India city, KSA city) | Footer, contact page, JSON-LD | City or country only (`src/data/site.ts`) |
-| Which Indian city the India HQ is in | Everywhere "India" appears as an office | "India" (`offices` in `src/data/site.ts`) |
-| Web3Forms access key | All forms | Without it, forms open the visitor's email app. Copy `.env.example` to `.env` and add the key. |
-| Social sharing image | `<meta property="og:image">` | `public/images/og-default.jpg` is missing (see IMAGES.md) |
+| Training course duration and fee | /training FAQ; batch listings | "Send an enquiry and we will reply with the fee…" Add dates to each batch in the admin portal when known. |
+| Internship duration and fee | /internships | "Shared on enquiry" |
+| Batch dates and internship intakes | /training, /internships | Posted from the admin portal (Training and HR roles) |
+| Open roles | /careers | Posted from the admin portal (HR role) |
+| Office street addresses (Dubai HQ, India), and the Indian city | Footer, contact page, structured data | City or country only (`src/data/site.ts`) |
+| Certification or accreditation body, if any | Training FAQ, certificates | The certificate is issued by Mechbridge International MEP Consultants only |
+| Authorised signatory | Printed certificate | A blank signature line labelled "Authorised signatory" (no name, per the no-team-names rule) |
 
 ## Draft claims to check
 
-These lines read as fact. Confirm each one or edit it.
+- **Service scope lists** in `src/data/services.ts` come from your portfolio. Check two additions: *tendering and project execution* bullets (tender document review, site coordination and progress tracking, handover and close-out), and *swimming pool plumbing* (marked "if offered" in your notes).
+- **Codes and standards** listed on the home page and the service pages (UAE Fire & Life Safety Code, SBC, NFPA, ASHRAE, SMACNA, UPC, BS EN 12056, POMI, NRM, CESMM, Dubai Municipality, Civil Defence, Al Sa'fat, Estidama). Remove any your teams don't use.
+- **Training delivery:** the site describes "live, instructor-led sessions scheduled around a working week" and never mentions classrooms or offices. Confirm that wording fits.
+- **About page story:** the paragraph about problems on GCC projects and how Mechbridge is built to fix them.
+- **Sectors on /services:** residential, hospitality, retail, healthcare, industrial, offices.
 
-- **About, story section:** "We started as a small team of MEP engineers working on Gulf projects…", plus the three problems the firm was built to fix. This history was written from the brief and needs confirming.
-- **Training:** "Every instructor is on current Mechbridge projects" and "Instructors come from our Dubai, India and Saudi teams".
-- **Training formats:** Dubai classroom (evenings and weekends), Saudi batches, live online. Confirm all three run.
-- **Training certificate:** "You receive a Mechbridge MEP Consultants certificate for each track you complete". Confirm, and say whether any external body accredits it.
-- **Training:** "redacted drawings from live projects in Dubai and KSA". Confirm you're allowed to use client material this way.
-- **Home:** the "6 tracks" count and the six track titles and modules in `src/data/tracks.ts`. These are a proposed curriculum; edit to match the real syllabus.
-- **Codes and authorities** listed on the home page, the services page and each track (UAE Fire & Life Safety Code, SBC, NFPA, ASHRAE, DEWA, SEC, DM, DCD, Al Sa'fat, Estidama, ISO 19650). Remove any your teams don't work to.
-- **Services:** peer review / value engineering, and supervision & commissioning. Confirm both are offered.
-- **Sectors** on `/services`: residential, hospitality, retail, healthcare, industrial, offices.
+## Confirmed by you
 
-## Confirmed by the brief
-
-- Mechbridge International is the main name and logo. Training is delivered under Mechbridge MEP Consultants.
-- 15+ years of industry experience.
-- Headquarters in Dubai and India, operations in Saudi Arabia.
-- connect@mechbridgegroup.com for inbound queries, support@mechbridgegroup.com for support.
+- Logo and title: Mechbridge International. Company name: Mechbridge International MEP Consultants. Domain: mechbridgegroup.com.
+- 15+ years in the industry. Headquarters in Dubai, operating from Dubai and India, serving and hiring in the UAE, Saudi Arabia, Qatar, Kuwait, Bahrain, Oman and India.
+- connect@, support@, careers@ and intern@mechbridgegroup.com.
+- Training is online-only in practice and never advertised as offline.
+- Primary offerings: HVAC, Firefighting, Plumbing, MEP Design, MEP Estimation and Project Management, Professional Engineering Training.
+- No team names or portraits on the site.

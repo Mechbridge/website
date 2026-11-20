@@ -1,72 +1,90 @@
 ---
 import { u } from '../lib/url';
 import Logo from './Logo.astro';
-import { site, offices } from '../data/site';
-import { tracks } from '../data/tracks';
+import { site, offices, servesShort } from '../data/site';
+import { services } from '../data/services';
 const year = new Date().getFullYear();
 ---
 <footer class="foot">
   <div class="wrap">
     <div class="foot__top">
       <a href={u('/')} class="foot__logo" aria-label="Mechbridge International, home"><Logo /></a>
-      <p class="foot__line">MEP design, fire and life safety, and engineer-led training. Dubai, India and Saudi Arabia.</p>
+      <p class="foot__line">HVAC, firefighting and plumbing engineering, MEP design, estimation and project management. Headquartered in Dubai, serving India and the GCC.</p>
     </div>
     <div class="foot__cols">
       <div>
+        <h2 class="foot__h">Services</h2>
+        <ul>
+          {services.map((s) => <li><a href={u(`/services/${s.slug}`)}>{s.title}</a></li>)}
+        </ul>
+      </div>
+      <div>
         <h2 class="foot__h">Company</h2>
         <ul>
-          <li><a href={u('/services')}>Services</a></li>
           <li><a href={u('/about')}>About</a></li>
-          <li><a href={u('/training')}>Training</a></li>
+          <li><a href={u('/training')}>Professional training</a></li>
+          <li><a href={u('/internships')}>Internships</a></li>
+          <li><a href={u('/careers')}>Careers</a></li>
+          <li><a href={u('/verify')}>Verify a certificate</a></li>
           <li><a href={u('/contact')}>Contact</a></li>
         </ul>
       </div>
-      <div>
-        <h2 class="foot__h">Training tracks</h2>
-        <ul>
-          {tracks.map((t) => <li><a href={u(`/training/${t.slug}`)}>{t.title}</a></li>)}
-        </ul>
-      </div>
-      <div>
+      <div class="foot__mail">
         <h2 class="foot__h">Write to us</h2>
         <ul>
           <li><span class="foot__k">Projects and training</span><a href={`mailto:${site.connect}`}>{site.connect}</a></li>
           <li><span class="foot__k">Client support</span><a href={`mailto:${site.support}`}>{site.support}</a></li>
+          <li><span class="foot__k">Careers</span><a href={`mailto:${site.careers}`}>{site.careers}</a></li>
+          <li><span class="foot__k">Internships</span><a href={`mailto:${site.intern}`}>{site.intern}</a></li>
         </ul>
       </div>
-      <div>
-        <h2 class="foot__h">Offices</h2>
+      <div class="foot__where">
+        <h2 class="foot__h">Where we work</h2>
         <ul>
           {offices.map((o) => <li class="foot__office"><span class="foot__k">{o.role}</span><span>{o.city}</span></li>)}
+          <li class="foot__office"><span class="foot__k">Serving</span><span class="foot__serves">{servesShort.join(' · ')}</span></li>
         </ul>
       </div>
     </div>
     <div class="foot__base">
-      <p>© {year} Mechbridge International. Training is delivered by Mechbridge MEP Consultants.</p>
-      <p class="mono">{site.domain}</p>
+      <p>© {year} {site.company}.</p>
+      <a class="foot__credit" href="https://shinelabsinnovations.com" target="_blank" rel="noopener">
+        <img src={u('/brand/shine-labs-innovation.svg')} alt="" width="34" height="20" loading="lazy" decoding="async" />
+        <span>Designed and developed by Shine Labs Innovation</span>
+      </a>
     </div>
   </div>
 </footer>
 
 <style>
-  .foot { background: var(--navy-950); color: var(--cream-300); padding: clamp(72px, 9vw, 128px) 0 32px; position: relative; z-index: 2; }
-  .foot__top { display: grid; grid-template-columns: auto 1fr; gap: 48px; align-items: end; padding-bottom: 56px; border-bottom: 1px solid var(--navy-600); }
-  .foot__logo { color: var(--cream-300); display: block; }
-  .foot__logo :global(svg) { height: clamp(88px, 10vw, 132px); width: auto; }
-  .foot__line { max-width: 40ch; justify-self: end; color: var(--navy-100); font-size: 1.0625rem; }
-  .foot__cols { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 32px; padding: 56px 0; }
-  .foot__h { font-family: var(--f-mono); font-size: var(--t-micro); font-weight: 500; letter-spacing: .14em; text-transform: uppercase; color: var(--navy-200); margin-bottom: 18px; line-height: 1.4; font-variation-settings: normal; }
-  .foot ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+  .foot { background: var(--navy-950); color: var(--cream-300); padding: clamp(64px, 9vw, 128px) 0 28px; position: relative; z-index: 2; }
+  .foot__top { display: grid; grid-template-columns: auto 1fr; gap: 48px; align-items: end; padding-bottom: clamp(32px, 5vw, 56px); border-bottom: 1px solid var(--navy-600); }
+  .foot__logo { color: var(--cream-300); display: inline-block; justify-self: start; }
+  .foot__logo :global(svg) { display: block; height: clamp(64px, 10vw, 150px); width: auto; }
+  .foot__line { max-width: 42ch; justify-self: end; color: var(--navy-100); font-size: 1.0625rem; }
+  .foot__cols { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 32px; padding: clamp(36px, 5vw, 56px) 0; }
+  .foot__h { font-family: var(--f-mono); font-size: var(--t-micro); font-weight: 500; letter-spacing: .14em; text-transform: uppercase; color: var(--navy-200); margin-bottom: 14px; line-height: 1.4; font-variation-settings: normal; }
+  .foot ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
   .foot li { display: grid; }
   .foot a { color: var(--cream-300); text-decoration: none; min-height: 44px; display: inline-flex; align-items: center; overflow-wrap: anywhere; transition: color .2s; }
   .foot a:hover { color: var(--red-300); }
   .foot__k { font-size: var(--t-micro); color: var(--navy-200); font-family: var(--f-mono); letter-spacing: .04em; margin-top: 6px; }
   .foot__office span:last-child { padding: 6px 0 8px; }
-  .foot__base { display: flex; justify-content: space-between; gap: 24px; flex-wrap: wrap; padding-top: 28px; border-top: 1px solid var(--navy-600); color: var(--navy-200); font-size: var(--t-small); }
+  .foot__serves { line-height: 1.6; }
+  .foot__base { display: flex; justify-content: space-between; align-items: center; gap: 12px 24px; flex-wrap: wrap; padding-top: 24px; border-top: 1px solid var(--navy-600); color: var(--navy-200); font-size: var(--t-small); }
+  .foot .foot__credit { gap: 10px; color: var(--navy-200); font-size: var(--t-micro); letter-spacing: .02em; opacity: .85; transition: opacity .2s, color .2s; }
+  .foot .foot__credit:hover { color: var(--cream-300); opacity: 1; }
+  .foot__credit img { width: 34px; height: 20px; flex: none; }
+  .foot__credit span { line-height: 1.4; }
   @media (max-width: 899px) {
-    .foot__top { grid-template-columns: 1fr; gap: 24px; }
+    .foot__top { grid-template-columns: 1fr; gap: 20px; }
     .foot__line { justify-self: start; }
-    .foot__cols { grid-template-columns: 1fr 1fr; }
+    .foot__cols { grid-template-columns: 1fr 1fr; gap: 28px 20px; }
   }
-  @media (max-width: 479px) { .foot__cols { grid-template-columns: 1fr; } }
+  @media (max-width: 599px) {
+    .foot__line { font-size: 1rem; }
+    .foot__mail, .foot__where { grid-column: 1 / -1; }
+    .foot a { font-size: .9375rem; }
+    .foot__base { flex-direction: column; align-items: flex-start; }
+  }
 </style>

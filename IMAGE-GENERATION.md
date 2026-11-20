@@ -15,3 +15,10 @@ format-online.webp and track-codes-wide.webp were corrected following user revie
 ## Validation
 
 All 68 requested WebP files exist, meet the listed minimum dimensions and are under 350,000 bytes. The sharing image is JPEG at exactly 1200 × 630.
+
+## Changes for the consultancy-first site (2026-11-20)
+
+- Removed every portrait and team photo (trainer-1..4, leader-1..3, about-story-1), so no image presents a person as Mechbridge staff.
+- Renamed the former training-track photos to the new service slots (track-hvac* → svc-hvac*, track-fire* → svc-fire*, track-plumbing* → svc-plumbing*, track-bim* → svc-design*, track-codes* → svc-estimation*). work-heatload was copied as svc-estimation-detail, svc-codes became services-cta, and home-studio became careers-hero.
+- Deleted unused files: track-electrical*, track-codes-detail, home-design, svc-bim, svc-site, training-markup.
+- hero-home.webp is now the user-supplied "Milky Way over a quiet boulevard" image. og-default.jpg was rebuilt from it with the new logo.

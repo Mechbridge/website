@@ -1,0 +1,23 @@
+# systemd unit for the Mechbridge website (Astro Node server).
+# Install: sudo cp deploy/mechbridge.service /etc/systemd/system/ && sudo systemctl enable --now mechbridge
+[Unit]
+Description=Mechbridge International website
+After=network.target
+
+[Service]
+Type=simple
+User=mechbridge
+WorkingDirectory=/var/www/mechbridge
+EnvironmentFile=/etc/mechbridge.env
+ExecStart=/usr/bin/node --disable-warning=ExperimentalWarning dist/server/entry.mjs
+Restart=always
+RestartSec=3
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/var/lib/mechbridge
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

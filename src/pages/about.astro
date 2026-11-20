@@ -4,25 +4,25 @@ import Base from '../layouts/Base.astro';
 import ImageSlot from '../components/ImageSlot.astro';
 import FlutedGlass from '../components/FlutedGlass.astro';
 import Arrow from '../components/Arrow.astro';
-import { offices } from '../data/site';
+import { offices, site, servesShort } from '../data/site';
 
 const principles = [
   ['Draw it to be built', 'A drawing is finished when a site team can install from it without calling us.'],
   ['Know the reviewer', 'Every market has its codes and its habits. We design for the person who approves the work.'],
+  ['Measure before we price', 'Every BOQ line comes from a takeoff someone can trace back to the drawings.'],
   ['Teach what we practise', 'Our training runs inside the consultancy, so what we teach is what we do on live projects.'],
-  ['One standard, three countries', 'The same checklists, templates and reviews in Dubai, India and Saudi Arabia.'],
+  ['One standard, every site', 'The same checklists, templates and reviews from Dubai and India, wherever in the GCC the project is.'],
 ];
-const leaders = ['leader-1', 'leader-2', 'leader-3'];
 ---
-<Base title="About Mechbridge" description="Mechbridge International: MEP engineers with 15+ years in the industry, headquartered in Dubai and India with operations in Saudi Arabia.">
+<Base og="about" breadcrumbs={[['About', '/about']]} jsonLd={[{ '@type': 'AboutPage', url: 'https://mechbridgegroup.com/about', about: { '@id': 'https://mechbridgegroup.com/#organization' } }]} title="About Mechbridge" description="Mechbridge International MEP Consultants: an MEP engineering consultancy with 15+ years in the industry, headquartered in Dubai, operating from Dubai and India and serving the GCC and India.">
   <section class="ah" data-enter aria-labelledby="ah-h">
     <div class="ah__img" aria-hidden="true">
       <ImageSlot id="about-hero" ratio="16 / 9" alt="" label="Dubai skyline at dusk from a construction site" eager />
     </div>
     <div class="wrap ah__inner">
-      <h1 id="ah-h">Engineers first, for fifteen years and counting.</h1>
+      <h1 id="ah-h">An MEP consultancy, fifteen years in the making.</h1>
       <div class="ah__panel glass" data-enter-item>
-        <p class="lede">Mechbridge International is a group of MEP and fire engineers with headquarters in Dubai and India and operations in Saudi Arabia. Mechbridge MEP Consultants, our consultancy, also trains the next generation of engineers for the region.</p>
+        <p class="lede">{site.company} engineers HVAC, firefighting and plumbing systems, produces MEP design and shop drawings, and estimates and manages MEP packages. Headquartered in Dubai and operating from Dubai and India, for clients in the UAE, Saudi Arabia, Qatar, Kuwait, Bahrain, Oman and India.</p>
       </div>
     </div>
   </section>
@@ -30,13 +30,12 @@ const leaders = ['leader-1', 'leader-2', 'leader-3'];
   <section class="section g-cream theme-cream" aria-labelledby="st-h">
     <div class="wrap grid-12 st">
       <div class="st__copy stack">
-        <h2 id="st-h" data-split>Built in the Gulf, staffed across two regions.</h2>
-        <p class="lede">We started as a small team of MEP engineers working on Gulf projects. The work grew, and so did the problems we kept seeing: drawings that couldn't be built, submissions that bounced, and graduates who knew the theory but had never seen a live set.</p>
-        <p class="body">Our answer was a firm where design teams in India and the Gulf work to one standard, engineers handle approvals themselves, and the consultancy trains graduates on the same projects it delivers.</p>
+        <h2 id="st-h" data-split>Built in Dubai, engineered across the GCC.</h2>
+        <p class="lede">Over fifteen years in the industry, the same problems kept coming back on GCC projects: drawings that couldn't be built, quantities nobody could trace, submissions that bounced, and graduates who knew the theory but had never seen a live set.</p>
+        <p class="body">Mechbridge is built to fix them: design and estimation teams in Dubai and India working to one standard, engineers who handle approvals themselves, and a training programme run by the same consultancy.</p>
       </div>
       <div class="st__media">
-        <ImageSlot id="about-story-1" ratio="4 / 5" alt="Early Mechbridge team photo in a small office" label="Team photo, early office" />
-        <ImageSlot id="about-story-2" ratio="1 / 1" alt="Engineers on a rooftop plant deck in Dubai" label="Rooftop plant deck, Dubai" />
+        <ImageSlot id="about-story-2" ratio="4 / 5" alt="Rooftop plant deck with chillers and ductwork in Dubai" label="Rooftop plant deck, Dubai" />
       </div>
     </div>
   </section>
@@ -45,8 +44,8 @@ const leaders = ['leader-1', 'leader-2', 'leader-3'];
     <div class="wrap rv">
       <div class="stack">
         <h2 id="rv-h" data-split>Changing how the GCC and the subcontinent build.</h2>
-        <p class="lede">Projects across the GCC and the subcontinent are often designed in one country and built in another, by teams who never meet. We connect them: Indian engineering depth, Gulf delivery, and one set of codes, templates and reviews between them.</p>
-        <p class="body">Training is part of that plan. The region needs engineers who can work on these projects from their first day, and our consultancy is where those projects are.</p>
+        <p class="lede">Projects across the GCC and the subcontinent are often designed in one country and built in another, by teams who never meet. We connect them: engineering depth in India, delivery from Dubai, and one set of codes, templates and reviews between them.</p>
+        <p class="body">Training and internships are part of that plan. The region needs engineers who can work on these projects from their first day, and our consultancy is where those projects are.</p>
         <a class="link" href={u('/training')}>How our training works <Arrow /></a>
       </div>
       <FlutedGlass ratio="4 / 5" rib={26} left="GCC" right="Subcontinent" />
@@ -55,11 +54,12 @@ const leaders = ['leader-1', 'leader-2', 'leader-3'];
 
   <section class="section g-deep" aria-labelledby="of-h">
     <div class="wrap">
-      <h2 id="of-h" class="of__h" data-split>Where we work.</h2>
+      <h2 id="of-h" class="of__h" data-split>Headquartered in Dubai, operating from Dubai and India.</h2>
+      <div class="of__serves"><p class="mono of__k">Serving</p><ul class="chips" aria-label="Countries we serve">{servesShort.map((c) => <li>{c}</li>)}</ul></div>
       <ul class="of">
         {offices.map((o) => (
           <li>
-            <ImageSlot id={`${o.img}-wide`} ratio="16 / 10" alt={`Mechbridge in ${o.city}`} label={`${o.city}: office or city`} />
+            <ImageSlot id={`${o.img}-wide`} ratio="16 / 10" alt={`${o.city}: city view`} label={`${o.city}: office or city`} />
             <div class="of__meta">
               <h3>{o.city}</h3>
               <p class="mono of__role">{o.role}</p>
@@ -80,26 +80,12 @@ const leaders = ['leader-1', 'leader-2', 'leader-3'];
     </div>
   </section>
 
-  <section class="section g-paper theme-paper" aria-labelledby="ld-h">
-    <div class="wrap">
-      <div class="ld-head">
-        <h2 id="ld-h" data-split>The people who lead the work.</h2>
-        <p class="body">Every discipline at Mechbridge is led by an engineer who still reviews drawings.</p>
-      </div>
-      <ul class="ld">
-        {leaders.map((id) => (
-          <li><ImageSlot id={id} ratio="3 / 4" alt="Mechbridge leadership portrait" label="Leadership portrait" /><p class="ld__n">Name to come</p><p class="body">Role to come</p></li>
-        ))}
-      </ul>
-    </div>
-  </section>
-
   <section class="section g-red theme-red" aria-labelledby="ab-c">
     <div class="wrap ab-c">
-      <h2 id="ab-c" data-split>Work with us, or learn with us.</h2>
+      <h2 id="ab-c" data-split>Bring us your next project.</h2>
       <div class="btn-row">
-        <a class="btn" href={u('/contact')}>Start a project conversation <Arrow /></a>
-        <a class="btn btn--ghost" href={u('/training#enquire')}>Enquire about training</a>
+        <a class="btn" href={u('/contact?topic=consultancy')}>Request a proposal <Arrow /></a>
+        <a class="btn btn--ghost" href={u('/careers')}>Careers at Mechbridge</a>
       </div>
     </div>
   </section>
@@ -115,14 +101,16 @@ const leaders = ['leader-1', 'leader-2', 'leader-3'];
 
   .st { align-items: center; }
   .st__copy { grid-column: 1 / 7; --flow: 24px; }
-  .st__media { grid-column: 8 / 13; display: grid; grid-template-columns: 1.2fr 1fr; gap: 16px; align-items: end; }
+  .st__media { grid-column: 8 / 13; display: grid; grid-template-columns: 1fr; gap: 16px; align-items: end; }
 
   .rv { display: grid; grid-template-columns: 1.3fr 1fr; gap: clamp(40px, 6vw, 112px); align-items: center; }
   .rv .stack { --flow: 28px; }
   .rv h2 { max-width: 14ch; }
 
-  .of__h { margin-bottom: clamp(40px, 5vw, 64px); }
-  .of { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+  .of__h { margin-bottom: 24px; max-width: 18ch; }
+  .of__serves { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; margin-bottom: clamp(36px, 5vw, 56px); }
+  .of__k { color: var(--navy-200); font-size: var(--t-micro); text-transform: uppercase; letter-spacing: .1em; }
+  .of { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; max-width: 1040px; }
   .of__meta { display: grid; gap: 6px; margin-top: 20px; }
   .of__role { color: var(--red-300); text-transform: uppercase; letter-spacing: .1em; font-size: var(--t-micro); }
 
@@ -131,19 +119,16 @@ const leaders = ['leader-1', 'leader-2', 'leader-3'];
   .pp__list { grid-column: 6 / 13; list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 40px 32px; }
   .pp__list li { border-top: 2px solid var(--red-500); padding-top: 20px; display: grid; gap: 10px; }
 
-  .ld-head { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: end; margin-bottom: clamp(40px, 5vw, 64px); }
-  .ld { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
-  .ld__n { margin-top: 16px; font-weight: 600; font-size: 1.125rem; }
 
   .ab-c { display: grid; gap: 40px; }
   .ab-c h2 { font-size: clamp(2.8rem, 7vw, 7rem); max-width: 14ch; }
 
   @media (max-width: 1099px) {
-    .ah__inner, .rv, .ld-head { grid-template-columns: 1fr; }
-    .of, .ld { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .ah__inner, .rv { grid-template-columns: 1fr; }
+    .of { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
   @media (max-width: 599px) {
-    .of, .ld, .pp__list { grid-template-columns: 1fr; }
+    .of, .pp__list { grid-template-columns: 1fr; }
     .ah__panel { padding: 20px; }
   }
 </style>

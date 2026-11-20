@@ -255,3 +255,21 @@ a:hover .slot img, .slot--zoom:hover img { transform: scale(1.03); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; scroll-behavior: auto !important; }
 }
+
+/* ---------- postings (rendered by src/scripts/postings.ts) ---------- */
+.posts { display: grid; gap: 16px; }
+.posts--grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); }
+.post { display: grid; gap: 10px; align-content: start; padding: 24px; border-radius: 12px; background: var(--color-surface); border: 1px solid var(--color-border); }
+.post__t { font-size: clamp(1.35rem, 2vw, 1.7rem); }
+.post__meta { color: var(--color-link); font-size: var(--t-micro); text-transform: uppercase; letter-spacing: .06em; }
+.post__s { max-width: 60ch; }
+.post__go { justify-self: start; margin-top: 6px; }
+.post__more summary { cursor: pointer; font-weight: 600; min-height: 44px; display: flex; align-items: center; color: var(--color-link); }
+.post__more summary:hover { color: var(--color-link-hover); }
+.post__body { display: grid; gap: 12px; padding: 4px 0 8px; }
+.post__sub { font-family: var(--f-body); font-size: 1rem; font-weight: 700; margin: 6px 0 0; }
+.post__list { margin: 0; padding-left: 20px; display: grid; gap: 6px; color: var(--color-text-muted); }
+.post__state { padding: 24px; border: 1px dashed var(--color-border-strong); border-radius: 12px; }
+.picked { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 14px 16px; border-radius: var(--radius); border: 1px solid var(--color-border-strong); margin-bottom: 18px; }
+.picked[hidden] { display: none; }
+.picked button { background: none; border: 0; color: var(--color-link); font-weight: 600; cursor: pointer; min-height: 44px; padding: 0; text-decoration: underline; text-underline-offset: 3px; }

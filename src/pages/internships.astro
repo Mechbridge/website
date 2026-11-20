@@ -1,0 +1,163 @@
+---
+import { u } from '../lib/url';
+import Base from '../layouts/Base.astro';
+import ImageSlot from '../components/ImageSlot.astro';
+import FlutedGlass from '../components/FlutedGlass.astro';
+import EnquiryForm from '../components/EnquiryForm.astro';
+import Arrow from '../components/Arrow.astro';
+import { internship, course } from '../data/course';
+import { site } from '../data/site';
+
+const flow = [
+  ['Apply', 'Send the form with your CV. Tell us your degree and when you can start.'],
+  ['Conversation', 'A short call about your background and the GCC roles you are aiming for.'],
+  ['The course', `${course.modules.map((m) => m.title).join(', ')}.`],
+  ['Project work', 'Supervised shop drawings, coordination drawings and BOQs, reviewed by our engineers.'],
+  ['Portfolio and interviews', 'A finished portfolio, CV review and technical interview practice.'],
+  ['Certificate', 'An internship certificate with a code employers can verify on this site.'],
+];
+---
+<Base og="internships" breadcrumbs={[['Internships', '/internships']]} title="GCC-Ready Internship Package" description="An internship package for engineering students and fresh graduates: the full MEP training course, supervised project work, a portfolio and interview preparation for GCC roles.">
+  <section class="ih" data-enter aria-labelledby="ih-h">
+    <div class="wrap ih__grid">
+      <div class="ih__copy">
+        <h1 id="ih-h">{internship.title}</h1>
+        <p class="lede" data-enter-item>{internship.lede}</p>
+        <div class="btn-row" data-enter-item>
+          <a class="btn" href="#apply">Apply for the internship <Arrow /></a>
+          <a class="btn btn--ghost" href="#included">What the package includes</a>
+        </div>
+      </div>
+      <div class="ih__media" data-enter-item>
+        <ImageSlot id="training-cohort" ratio="4 / 5" alt="Students working on drawings at a shared table with an instructor" label="Students working on drawings" eager />
+        <div class="ih__block glass">
+          <div class="tblock__row"><span class="tblock__k">For</span><span class="tblock__v">Students and fresh graduates</span></div>
+          <div class="tblock__row"><span class="tblock__k">Includes</span><span class="tblock__v">Full course + project work</span></div>
+          <div class="tblock__row"><span class="tblock__k">Duration and fee</span><span class="tblock__v">Shared on enquiry</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section g-cream theme-cream" id="included" aria-labelledby="inc-h">
+    <div class="wrap">
+      <h2 id="inc-h" class="inc__h" data-split>Everything a GCC employer asks a new MEP engineer for.</h2>
+      <ol class="inc">
+        {internship.includes.map(([t, d], i) => (
+          <li><span class="dot inc__n">{String(i + 1).padStart(2, '0')}</span><h3>{t}</h3><p class="body">{d}</p></li>
+        ))}
+      </ol>
+    </div>
+  </section>
+
+  <section class="section g-navy" aria-labelledby="who-h">
+    <div class="wrap who">
+      <div class="stack">
+        <h2 id="who-h" data-split>Who it is for.</h2>
+        <ul class="who__list">{internship.forWho.map((w) => <li>{w}</li>)}</ul>
+        <p class="body">Already working? The <a class="link" href={u('/training')}>professional training course</a> on its own may suit you better.</p>
+      </div>
+      <FlutedGlass ratio="4 / 5" rib={22} left="GCC" right="Ready" />
+    </div>
+  </section>
+
+  <section class="section g-deep" aria-labelledby="flow-h">
+    <div class="wrap grid-12 flow">
+      <div class="flow__head">
+        <h2 id="flow-h" data-split>How the internship runs.</h2>
+        <ImageSlot id="work-site" ratio="16 / 10" alt="Site visit in hard hats looking at exposed ductwork" label="Site visit, exposed ductwork" />
+      </div>
+      <ol class="flow__steps">
+        {flow.map(([t, d], i) => (
+          <li><span class="dot flow__n">{String(i + 1).padStart(2, '0')}</span><div><h3>{t}</h3><p class="body">{d}</p></div></li>
+        ))}
+      </ol>
+    </div>
+  </section>
+
+  <section class="section g-navy" id="intakes" aria-labelledby="in-h">
+    <div class="wrap">
+      <div class="in-head">
+        <h2 id="in-h" data-split>Open intakes.</h2>
+        <p class="body">Each intake lists its location, format and start date. Apply to an intake or send a general application.</p>
+      </div>
+      <div class="posts posts--grid" data-intakes></div>
+    </div>
+  </section>
+
+  <section class="section g-navy apply" id="apply" aria-labelledby="ap-h">
+    <div class="wrap grid-12 enq">
+      <div class="enq__copy stack">
+        <h2 id="ap-h" data-split>Apply for the internship.</h2>
+        <p class="lede">Attach your CV if you have one ready. We reply with the next intake, the duration and the fee.</p>
+      </div>
+      <div class="enq__form">
+        <p class="picked" data-picked hidden>Applying for <strong data-ref-title></strong> <button type="button" data-unpick>Any intake instead</button></p>
+        <EnquiryForm id="internship-form" type="internship" types={['internship']} cv mail={site.intern} submit="Send my application" />
+      </div>
+    </div>
+  </section>
+</Base>
+
+<script>
+  import { mountPostings, pickInForm, clearPick } from '../scripts/postings';
+  const note = document.querySelector<HTMLElement>('[data-picked]');
+  mountPostings({
+    kind: 'internship',
+    root: document.querySelector<HTMLElement>('[data-intakes]')!,
+    empty: 'No intake dates are published right now. Send a general application and we will contact you when the next intake opens.',
+    action: 'Apply to this intake',
+    details: true,
+    onPick: (p) => pickInForm('internship-form', p, note),
+  });
+  document.querySelector('[data-unpick]')?.addEventListener('click', () => clearPick('internship-form', note));
+</script>
+
+<style>
+  .ih { background: var(--navy-800); padding: calc(var(--nav-h) + clamp(40px, 6vw, 88px)) 0 clamp(64px, 8vw, 120px); }
+  .ih__grid { display: grid; grid-template-columns: 1.1fr .9fr; gap: clamp(32px, 5vw, 88px); align-items: end; }
+  .ih__copy { display: grid; gap: 28px; padding-bottom: 12px; }
+  .ih h1 { max-width: 12ch; font-size: clamp(2.8rem, 6.6vw, 6.6rem); }
+  .ih__media { position: relative; }
+  .ih__block { position: absolute; left: -32px; bottom: 32px; width: min(380px, 92%); padding: 4px 0; }
+  .ih__block :global(.tblock__row) { border-top-color: rgb(240 225 206 / .14); }
+
+  .inc__h { max-width: 18ch; margin-bottom: clamp(40px, 5vw, 64px); }
+  .inc { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 40px 32px; }
+  .inc li { border-top: 2px solid var(--red-500); padding-top: 18px; display: grid; gap: 10px; align-content: start; }
+  .inc__n { color: var(--red-500); font-size: 1.3rem; }
+
+  .who { display: grid; grid-template-columns: 1.3fr 1fr; gap: clamp(40px, 6vw, 112px); align-items: center; }
+  .who .stack { --flow: 28px; }
+  .who__list { list-style: none; margin: 0; padding: 0; }
+  .who__list li { padding: 20px 0 20px 34px; border-top: var(--hair); font-size: 1.1875rem; position: relative; }
+  .who__list li:last-child { border-bottom: var(--hair); }
+  .who__list li::before { content: ""; position: absolute; left: 0; top: 32px; width: 18px; height: 2px; background: var(--red-500); }
+  .who .link { min-height: 0; }
+
+  .flow { align-items: start; }
+  .flow__head { grid-column: 1 / 6; display: grid; gap: 40px; position: sticky; top: 120px; }
+  .flow__steps { grid-column: 7 / 13; list-style: none; margin: 0; padding: 0; }
+  .flow__steps li { display: grid; grid-template-columns: 64px 1fr; gap: 16px; padding: 28px 0; border-top: var(--hair); }
+  .flow__steps li:last-child { border-bottom: var(--hair); }
+  .flow__n { color: var(--red-300); font-size: 1.6rem; line-height: 1; }
+  .flow__steps h3 { margin-bottom: 8px; }
+
+  .in-head { display: grid; grid-template-columns: 1.3fr 1fr; gap: 32px; align-items: end; margin-bottom: clamp(32px, 4vw, 56px); }
+  .apply { border-top: 1px solid var(--navy-600); }
+  .enq { align-items: start; }
+  .enq__copy { grid-column: 1 / 6; --flow: 28px; }
+  .enq__form { grid-column: 7 / 13; }
+
+  @media (max-width: 1099px) {
+    .ih__grid, .who, .in-head { grid-template-columns: 1fr; }
+    .ih__block { left: 16px; bottom: 16px; }
+    .inc { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .flow__head { position: static; }
+  }
+  @media (max-width: 599px) {
+    .inc { grid-template-columns: 1fr; }
+    .ih__block { position: relative; left: 0; bottom: 0; width: 100%; margin-top: -48px; }
+    .flow__steps li { grid-template-columns: 48px 1fr; }
+  }
+</style>

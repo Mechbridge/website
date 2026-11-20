@@ -8,57 +8,68 @@ web
 
 ## Stack
 
-Astro (static output), GSAP 3.13 (ScrollTrigger + ScrollSmoother), three.js r159 for the home clay background. Forms post to Web3Forms (key added later, mailto fallback). Chosen by the user on 2026-11-16.
+Astro 5, built two ways (user decision, 2026-11-20):
+- **Production on the owner's VPS:** `@astrojs/node` standalone, SQLite via `node:sqlite`, a staff portal with logins.
+- **Static demo on GitHub Pages** for management review: the same UI, with data in the browser's localStorage.
+
+Also GSAP 3.13 (ScrollTrigger, ScrollSmoother, SplitText) and three.js r159 for the home clay background.
 
 ## Users
 
-1. **Engineers who want GCC-ready skills** (primary for training): fresh mechanical, electrical and civil graduates and early-career engineers in India, the UAE and Saudi Arabia, plus working engineers moving into MEP design. They're comparing training options and want proof the course gets them hired on Gulf projects.
-2. **Developers, contractors and architects** (consultancy clients) who need MEP design, fire and life safety design, code compliance and authority approvals in the UAE, KSA and India.
-3. Existing clients who need support (support@).
+1. **Consultancy clients** (primary): developers, main contractors, MEP contractors and architects who need HVAC, firefighting or plumbing engineering, MEP design and shop drawings, or BOQs, cost estimates and tender support, in the UAE, Saudi Arabia, Qatar, Kuwait, Bahrain, Oman and India.
+2. **Engineers choosing training:** graduates and working engineers who want MEP design skills for the GCC.
+3. **Students and fresh graduates** who want the GCC-ready internship package.
+4. **Job seekers:** MEP engineers, draughtspeople and quantity surveyors.
+5. **Employers** verifying a Mechbridge certificate.
+6. **Staff** using the portal: superadmin, HR, Training, Sales.
 
 ## Product Purpose
 
-The site is for Mechbridge International, a group whose MEP consultancy, Mechbridge MEP Consultants, runs engineer-led training. It presents the consultancy and moves engineers to enquire about or enrol in training. Success means training enquiries through the forms or connect@mechbridgegroup.com, and consultancy leads through the same channel.
+The site presents Mechbridge International MEP Consultants as an MEP engineering consultancy. Success means proposal requests first, then training enquiries, internship applications and job applications, all landing as leads in the staff portal. It also publishes jobs, internship intakes and training batches, and issues certificates anyone can verify.
 
 ## Positioning
 
-The training isn't academic. Every course is taught by engineers from Mechbridge MEP Consultants who work on live, high-stakes projects in Dubai and the Kingdom of Saudi Arabia. A training institute can't copy that, because it doesn't run the projects.
+A multidisciplinary MEP consultancy specialising in HVAC, firefighting and fire protection, and plumbing and public health. It carries a project from load calculations and design through shop drawings, BOQs and tender to execution and as-built, with teams in Dubai and India working to one standard. Its training and internships are run by the same engineers. They are not academic.
 
 ## Operating Context
 
-- Headquarters in Dubai and India. Operations in Saudi Arabia.
-- 15+ years of industry experience (the only figure the user has confirmed).
-- Disciplines: MEP design (HVAC, plumbing and drainage, electrical, ELV), fire fighting and fire alarm / life safety, construction codes and authority approvals, construction design support.
-- Regional codes in daily use (inferred from the domain, to confirm): UAE Fire & Life Safety Code, Saudi Building Code (SBC), NFPA, ASHRAE, DEWA and SEC regulations, Dubai Municipality and Civil Defence approvals.
-- Ambition: changing how projects are engineered across the GCC and the Indian subcontinent.
+- Headquarters in Dubai. Operating from Dubai and India. Serving, and hiring in, the six GCC states (UAE, Saudi Arabia, Qatar, Kuwait, Bahrain, Oman) and India. 15+ years in the industry (the only confirmed figure).
+- Copy says "GCC", never "Gulf" (user decision, 2026-11-20).
+- Training is delivered online only, but the site never says so outright: no classroom, office or city-based training is advertised, and "live, instructor-led sessions" implies it.
+- The five engineering services and their scope lists come from the company's own service portfolio (pasted by the user, Nov 2026). See `src/data/services.ts`.
+- Training is **one course**: Professional MEP Engineering Training (HVAC, Firefighting, Plumbing, AutoCAD, Revit MEP).
+- Internship is a **package**: the full course plus supervised project work, portfolio, interview prep and a certificate.
+- Codes listed (to confirm): UAE Fire & Life Safety Code, Saudi Building Code, NFPA, ASHRAE, SMACNA, UPC, BS EN 12056, Dubai Municipality, Civil Defence, Al Sa'fat, Estidama.
 
 ## Capabilities and Constraints
 
-- Domain: mechbridgegroup.com. Inbound: connect@mechbridgegroup.com. Support: support@mechbridgegroup.com.
-- Main name and logo: Mechbridge International. The training is delivered under Mechbridge MEP Consultants.
-- Multi-page site. The clay scroll background appears only on the home page.
-- Undecided: course durations, fees, schedules, cohort sizes, certification body, trainer names, office addresses, project names. Mark these `[TBC]` and never invent them.
+- Domain: mechbridgegroup.com. Inbound: connect@. Support: support@. Careers: careers@. Internships: intern@ (all @mechbridgegroup.com). Lead alerts route per type to the matching inbox.
+- Logo and title: Mechbridge International. Company name in text: Mechbridge International MEP Consultants.
+- Roles: superadmin (everything, staff accounts), HR (jobs, internships and their applications), Training (batches, certificates, training enquiries), Sales (proposal, contact and support leads).
+- Certificate codes look like `MBI-YYYY-XXXXXX`. Public verification shows only holder name, programme, title, issue date and status.
+- Undecided: course and internship durations and fees, batch dates, office addresses, the certification or accreditation body. Never invent these.
 
 ## Brand Commitments
 
-- Palette from `brand-theme/`: Midnight Navy #1A2841, Old Cream #F0E1CE, Vintage Red #B11722, plus scales. Never red text on navy. Never navy on red.
-- Logo: `public/logo/mechbridge.svg` (M-shaped bridge + MECHBRIDGE wordmark), recoloured per ground: cream on navy or photo, red on cream.
-- The attached night-house hero photo leads the home page. The clay scroll scene from `background-design/` starts after the hero viewport.
-- The user asked for glassmorphism and Nothing OS-style fluted glass art, but only over backgrounds (photo, clay scene). Other sections stay flat brand colour.
-- Make the group feel large through scale and confidence, never by claiming size in words.
+- Palette from `brand-theme/`: Midnight Navy #1A2841, Old Cream #F0E1CE, Vintage Red #B11722. Never red text on navy.
+- Logo: skyscraper "M" monogram with MECHBRIDGE wordmark (Nov 2026), recoloured per ground.
+- Home hero: a night business boulevard with red-edged towers. The clay scroll scene stays behind the home sections (user decision).
+- Glass and fluted glass appear only over photos or the clay scene.
+- **No team names, portraits or team photos anywhere** (user decision). Work scenes with incidental people are fine, but their alt text must not claim they show Mechbridge staff.
+- Feel like a large firm through scale and confidence, never by claiming size.
 
 ## Evidence on Hand
 
-- Logo SVG, hero photo, brand tokens, clay background.
-- No testimonials, client logos, project case studies, trainee numbers, or photography of real staff or sites yet. All image slots are placeholders listed in IMAGES.md.
+- Logo, hero photo, brand tokens, clay background, and 50+ AI-generated illustrative photos (see IMAGE-GENERATION.md; none show real staff or projects).
+- No testimonials, client logos, case studies or project names. Don't fabricate any.
 
 ## Product Principles
 
-1. Training is the headline product. Give it equal or greater weight than the consultancy on every page.
-2. Prove with specifics (codes, drawings, authorities, sites), not adjectives.
-3. Big-firm calm: short sentences, no hype, no superlatives.
-4. Never fabricate a number, client or credential.
+1. Consultancy first: services lead every page's hierarchy. Training, internships and careers follow.
+2. Prove with specifics (scope items, codes, deliverables), not adjectives.
+3. Big-firm calm: short sentences, no hype.
+4. Never fabricate a number, client, person or credential.
 
 ## Accessibility & Inclusion
 
-WCAG 2.2 AA. Full reduced-motion support (no smooth-scroll hijack, static clay scene). Content must stay readable without WebGL.
+WCAG 2.2 AA. Full reduced-motion support. Content readable without WebGL. The admin portal is keyboard-operable.

@@ -5,84 +5,108 @@ import ImageSlot from '../../components/ImageSlot.astro';
 import FlutedGlass from '../../components/FlutedGlass.astro';
 import EnquiryForm from '../../components/EnquiryForm.astro';
 import Arrow from '../../components/Arrow.astro';
-import { tracks } from '../../data/tracks';
-import { compare, steps } from '../../data/training';
+import { course, compare, steps } from '../../data/course';
 import { site } from '../../data/site';
 
-const trainers = [
-  { img: 'trainer-1', role: 'Senior HVAC Engineer', where: 'Dubai' },
-  { img: 'trainer-2', role: 'Fire & Life Safety Lead', where: 'Dubai · KSA' },
-  { img: 'trainer-3', role: 'Senior Electrical Engineer', where: 'KSA' },
-  { img: 'trainer-4', role: 'BIM Coordination Lead', where: 'India · Dubai' },
-];
-const formats = [
-  { img: 'format-dubai', title: 'Classroom in Dubai', text: 'Evening and weekend sessions at our Dubai office, next to the teams doing the work.' },
-  { img: 'format-ksa', title: 'Batches in Saudi Arabia', text: 'Cohorts run alongside our Saudi operations, with SBC and local authority practice built in.' },
-  { img: 'format-online', title: 'Live online', text: 'The same instructors and project sets, taught live, for engineers in India and across the GCC.' },
-];
 const faqs = [
-  ['Do I need work experience?', 'No. Most tracks suit final-year students and fresh graduates in mechanical, electrical or civil engineering. Working engineers join too, often to move from site into design. The skills check puts you at the right level.'],
-  ['Who are the instructors?', 'Engineers from Mechbridge MEP Consultants who work on our current projects in Dubai and Saudi Arabia. They teach alongside their project work.'],
-  ['Will I work on real projects?', 'You work on real project material: drawings, calculations and authority comments from live jobs, redacted so client details stay private.'],
-  ['Do I get a certificate?', 'Yes. You receive a Mechbridge MEP Consultants certificate for each track you complete, plus the portfolio of work you produced.'],
-  ['Can I train while I work?', 'Yes. Classroom sessions run in the evenings and at weekends, and the live online format fits around a working week.'],
-  ['What does it cost and when does the next cohort start?', 'Fees and dates depend on the track and format. Send an enquiry and we will reply with the current schedule.'],
+  ['Do I need work experience?', 'No. The course suits final-year students and fresh graduates in mechanical, civil or electrical engineering, and working engineers who want to move into MEP design. A short skills check puts you at the right level.'],
+  ['Is it one course or several?', 'One course. HVAC, firefighting, plumbing, AutoCAD and Revit MEP are taught together, the way they come together on a real drawing set.'],
+  ['Who teaches it?', 'Engineers from Mechbridge International MEP Consultants who design these systems on current projects.'],
+  ['Do I get a certificate?', 'Yes. Each certificate carries a unique code. Employers can check it on our verification page.'],
+  ['Can I train while I work?', 'Yes. Sessions are scheduled around a working week, so most engineers train alongside their jobs.'],
+  ['What does it cost and when does the next batch start?', 'Published batches are listed on this page with their start dates. Send an enquiry and we will reply with the fee and the current schedule.'],
 ];
 const gallery = [
   { id: 'work-heatload', ratio: '4 / 3', alt: 'Heat load workbook on a laptop beside a printed floor plan', label: 'Heat load workbook + floor plan' },
   { id: 'work-model', ratio: '4 / 5', alt: 'Revit MEP model of a plant room', label: 'Revit MEP plant room model' },
-  { id: 'work-markup', ratio: '4 / 5', alt: 'Fire alarm layout with red review mark-ups', label: 'Fire alarm layout, review mark-ups' },
-  { id: 'work-sld', ratio: '4 / 3', alt: 'Electrical single line diagram pinned to a wall', label: 'Single line diagram on a pin-up wall' },
-  { id: 'work-site', ratio: '16 / 9', alt: 'Trainees on a site visit in hard hats looking at exposed ductwork', label: 'Site visit, exposed ductwork' },
+  { id: 'work-markup', ratio: '4 / 5', alt: 'Firefighting layout with red review mark-ups', label: 'Layout with review mark-ups' },
+  { id: 'work-sld', ratio: '4 / 3', alt: 'Schematic drawings pinned to a wall', label: 'Schematics on a pin-up wall' },
+  { id: 'work-site', ratio: '16 / 9', alt: 'Site visit in hard hats looking at exposed ductwork', label: 'Site visit, exposed ductwork' },
+];
+const trainingLd = [
+  {
+    '@type': 'Course',
+    name: course.title,
+    description: course.lede,
+    url: 'https://mechbridgegroup.com/training',
+    image: 'https://mechbridgegroup.com/og/training.jpg',
+    provider: { '@id': 'https://mechbridgegroup.com/#organization' },
+    teaches: course.modules.map((m) => m.title),
+    syllabusSections: course.modules.map((m) => ({ '@type': 'Syllabus', name: m.title, description: m.items.join('; ') })),
+    educationalCredentialAwarded: 'Mechbridge International MEP Consultants certificate (verifiable online)',
+    inLanguage: 'en',
+  },
+  {
+    '@type': 'FAQPage',
+    mainEntity: faqs.map(([q, a]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } })),
+  },
 ];
 ---
 <Base
-  title="MEP training taught by working engineers"
-  description="HVAC, plumbing, fire, electrical, BIM and authority approvals training from Mechbridge MEP Consultants, taught by engineers on live Dubai and Saudi projects."
+  og="training"
+  breadcrumbs={[['Training', '/training']]}
+  jsonLd={trainingLd}
+  title="Professional MEP Engineering Training"
+  description="One course in HVAC, firefighting, plumbing, AutoCAD and Revit MEP, taught by engineers from Mechbridge International MEP Consultants for engineers across the GCC and India."
 >
-  <!-- HERO -->
   <section class="t-hero" data-enter aria-labelledby="t-hero-h">
     <div class="wrap t-hero__grid">
       <div class="t-hero__copy">
-        <h1 id="t-hero-h">MEP training taught by engineers on live projects.</h1>
-        <p class="lede" data-enter-item>Mechbridge MEP Consultants trains engineers for the GCC market. By day your instructors design MEP systems for projects in Dubai and Saudi Arabia. In class, they show you how they do it.</p>
+        <h1 id="t-hero-h">{course.title}</h1>
+        <p class="lede" data-enter-item>{course.lede}</p>
         <div class="btn-row" data-enter-item>
-          <a class="btn" href="#enquire">Enquire about the next cohort <Arrow /></a>
-          <a class="btn btn--ghost" href="#tracks">See the six tracks</a>
+          <a class="btn" href="#enquire">Enquire about the next batch <Arrow /></a>
+          <a class="btn btn--ghost" href="#modules">See what the course covers</a>
         </div>
       </div>
       <div class="t-hero__media" data-enter-item>
-        <ImageSlot id="training-hero" ratio="4 / 5" alt="Mechbridge engineer teaching a small group around a large printed MEP drawing" label="Instructor teaching at a printed MEP drawing" eager />
+        <ImageSlot id="training-hero" ratio="4 / 5" alt="Instructor explaining a large printed MEP drawing to a small group" label="Instructor at a printed MEP drawing" eager />
         <div class="t-hero__block glass">
-          <div class="tblock__row"><span class="tblock__k">Taught by</span><span class="tblock__v">Mechbridge MEP Consultants</span></div>
-          <div class="tblock__row"><span class="tblock__k">Formats</span><span class="tblock__v">Dubai · KSA · Online</span></div>
-          <div class="tblock__row"><span class="tblock__k">Status</span><span class="tblock__v dot live t-live">Enrolling</span></div>
+          <div class="tblock__row"><span class="tblock__k">Modules</span><span class="tblock__v">{course.modules.map((m) => m.title).join(' · ')}</span></div>
+          <div class="tblock__row"><span class="tblock__k">Sessions</span><span class="tblock__v">Live, instructor-led</span></div>
+          <div class="tblock__row"><span class="tblock__k">Certificate</span><a class="tblock__v t-verify" href={u('/verify')}>Verifiable online</a></div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- RED STATEMENT -->
   <section class="section g-red theme-red" aria-labelledby="t-red-h">
     <div class="wrap red">
-      <h2 id="t-red-h" class="red__h" data-split>Your instructor was on site this morning.</h2>
+      <h2 id="t-red-h" class="red__h" data-split>Not academic. Taught from live projects.</h2>
       <div class="red__row">
-        <ImageSlot id="training-site" ratio="3 / 2" alt="Mechbridge engineer in a hard hat checking ductwork on a Dubai site" label="Engineer on site, hard hat, ductwork" />
+        <ImageSlot id="training-site" ratio="3 / 2" alt="Engineer in a hard hat checking ductwork on a construction site" label="Engineer on site, hard hat, ductwork" />
         <ul class="red__list">
-          <li><strong>Working engineers teach.</strong> Every instructor is on current Mechbridge projects.</li>
-          <li><strong>Real drawings.</strong> You learn from redacted sets out of live Dubai and Saudi jobs.</li>
-          <li><strong>Reviewed like our own team.</strong> Your work goes through the same design review our engineers face.</li>
+          <li><strong>Working engineers teach.</strong> Instructors come from our consultancy, where they design these systems for clients.</li>
+          <li><strong>Real drawing sets.</strong> You work on project-style sets drawn from the building types we design in the GCC.</li>
+          <li><strong>Reviewed like our own team.</strong> Your drawings go through the same design review our engineers face.</li>
         </ul>
       </div>
     </div>
   </section>
 
-  <!-- COMPARISON -->
+  <section class="section g-navy" id="modules" aria-labelledby="mod-h">
+    <div class="wrap">
+      <div class="mod-head">
+        <h2 id="mod-h" data-split>Five modules, one drawing set.</h2>
+        <p class="body">Each module ends with drawings and calculations you hand in for review. By the last one you have a complete MEP set for one building.</p>
+      </div>
+      <ol class="mods">
+        {course.modules.map((m) => (
+          <li class="mod">
+            <span class="mod__code mono">{m.code}</span>
+            <h3>{m.title}</h3>
+            <ul>{m.items.map((it) => <li>{it}</li>)}</ul>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </section>
+
   <section class="section g-cream theme-cream" aria-labelledby="t-cmp-h">
     <div class="wrap grid-12 cmp">
       <div class="cmp__head">
         <h2 id="t-cmp-h" data-split>What changes when working engineers teach.</h2>
-        <p class="lede">An academic course teaches the theory. We teach the job: the codes as authorities apply them, the details contractors ask about, and the comments that come back from Civil Defence.</p>
+        <p class="lede">An academic course teaches the theory. We teach the job: codes as authorities apply them, the details contractors ask about, and the comments that come back from Civil Defence.</p>
       </div>
       <table class="compare cmp__table">
         <caption class="sr-only">How Mechbridge training compares with a typical course</caption>
@@ -92,55 +116,21 @@ const gallery = [
     </div>
   </section>
 
-  <!-- TRACKS -->
-  <section class="section g-navy" id="tracks" aria-labelledby="t-tracks-h">
+  <section class="section g-deep" id="batches" aria-labelledby="b-h">
     <div class="wrap">
-      <div class="tr-head">
-        <h2 id="t-tracks-h" data-split>Six tracks, one for each system on a drawing set.</h2>
-        <p class="body">Take one track to specialise, or combine them. Each one ends with a design review and a portfolio of deliverables.</p>
+      <div class="mod-head">
+        <h2 id="b-h" data-split>Upcoming batches.</h2>
+        <p class="body">Dates are published here as soon as each batch is confirmed.</p>
       </div>
-      <ul class="tr-grid">
-        {tracks.map((t) => (
-          <li>
-            <a class="tr-card" href={u(`/training/${t.slug}`)}>
-              <ImageSlot id={t.img} ratio="3 / 2" alt={`${t.title} training`} label={t.title} />
-              <span class="tr-card__top"><span class="mono tr-card__ref">{t.code}</span><span class="mono tr-card__mods">{t.modules.length} modules</span></span>
-              <span class="tr-card__title">{t.title}</span>
-              <span class="tr-card__short">{t.short}</span>
-              <span class="tr-card__go">View the track <Arrow /></span>
-            </a>
-          </li>
-        ))}
-      </ul>
+      <div class="posts posts--grid" data-batches></div>
     </div>
   </section>
 
-  <!-- TRAINERS -->
-  <section class="section g-deep" aria-labelledby="t-tr-h">
-    <div class="wrap">
-      <div class="grid-12 trn-head">
-        <h2 id="t-tr-h" data-split>Taught by the people who sign the drawings.</h2>
-        <p class="body">Instructors come from our Dubai, India and Saudi teams, so you learn each discipline from an engineer who practises it.</p>
-      </div>
-      <ul class="trn">
-        {trainers.map((p) => (
-          <li>
-            <ImageSlot id={p.img} ratio="3 / 4" alt={`${p.role}, Mechbridge MEP Consultants`} label={`Portrait: ${p.role}`} />
-            <p class="trn__name">Name to come</p>
-            <p class="trn__role">{p.role}</p>
-            <p class="mono trn__where">{p.where}</p>
-          </li>
-        ))}
-      </ul>
-    </div>
-  </section>
-
-  <!-- JOURNEY -->
   <section class="section g-navy" aria-labelledby="t-j-h">
     <div class="wrap grid-12 jr">
       <div class="jr__head">
-        <h2 id="t-j-h" data-split>From first call to finished portfolio.</h2>
-        <ImageSlot id="training-review" ratio="4 / 3" alt="Trainee presenting drawings to a senior engineer in a design review" label="Trainee in a design review" />
+        <h2 id="t-j-h" data-split>From first enquiry to certificate.</h2>
+        <ImageSlot id="training-review" ratio="4 / 3" alt="Drawings presented on a screen during a design review" label="Design review at a screen" />
       </div>
       <ol class="jr__steps">
         {steps.map(([t, d], i) => (
@@ -150,28 +140,11 @@ const gallery = [
     </div>
   </section>
 
-  <!-- FORMATS -->
-  <section class="section g-cream theme-cream" aria-labelledby="t-f-h">
-    <div class="wrap">
-      <h2 id="t-f-h" class="fm-h" data-split>Three ways to join.</h2>
-      <ul class="fm">
-        {formats.map((f) => (
-          <li>
-            <ImageSlot id={f.img} ratio="4 / 3" alt={f.title} label={f.title} />
-            <h3>{f.title}</h3>
-            <p class="body">{f.text}</p>
-          </li>
-        ))}
-      </ul>
-    </div>
-  </section>
-
-  <!-- GALLERY -->
   <section class="section g-deep" aria-labelledby="t-g-h">
     <div class="wrap">
       <div class="gl-head">
-        <h2 id="t-g-h" data-split>The work you'll leave with.</h2>
-        <FlutedGlass class="gl-art" ratio="16 / 7" rib={16} left="Portfolio" right="Track by track" />
+        <h2 id="t-g-h" data-split>The work you leave with.</h2>
+        <FlutedGlass class="gl-art" ratio="16 / 7" rib={16} left="Portfolio" right="Module by module" />
       </div>
       <div class="gl">
         {gallery.map((g, i) => <div class={`gl__i gl__i--${i + 1}`}><ImageSlot id={g.id} ratio={g.ratio} alt={g.alt} label={g.label} /></div>)}
@@ -179,57 +152,82 @@ const gallery = [
     </div>
   </section>
 
-  <!-- FAQ -->
+  <section class="section g-red theme-red" aria-labelledby="t-int-h">
+    <div class="wrap int">
+      <h2 id="t-int-h" data-split>Still studying? Take the internship package.</h2>
+      <div class="stack">
+        <p class="lede">The GCC-Ready Internship Package adds supervised project work, a portfolio review and interview preparation to the full course.</p>
+        <a class="btn" href={u('/internships')}>See the internship package <Arrow /></a>
+      </div>
+    </div>
+  </section>
+
   <section class="section g-paper theme-paper" aria-labelledby="t-q-h">
     <div class="wrap grid-12 faq">
       <h2 id="t-q-h" class="faq__h" data-split>Questions engineers ask us.</h2>
       <div class="faq__list">
         {faqs.map(([q, a]) => (
-          <details>
-            <summary><span>{q}</span><span class="faq__ic" aria-hidden="true"></span></summary>
-            <p class="body">{a}</p>
-          </details>
+          <details><summary><span>{q}</span><span class="faq__ic" aria-hidden="true"></span></summary><p class="body">{a}</p></details>
         ))}
       </div>
     </div>
   </section>
 
-  <!-- ENQUIRE -->
   <section class="section g-navy" id="enquire" aria-labelledby="t-e-h">
     <div class="wrap grid-12 enq">
       <div class="enq__copy stack">
-        <h2 id="t-e-h" data-split>Ask about the next cohort.</h2>
-        <p class="lede">Tell us your background and the track you're interested in. An engineer from the training team will reply with dates, format and fees.</p>
+        <h2 id="t-e-h" data-split>Ask about the next batch.</h2>
+        <p class="lede">Tell us your background and when you would like to start. The training team replies with the next batch dates and the fee.</p>
         <div class="tblock enq__tb">
-          <div class="tblock__row"><span class="tblock__k">Training and projects</span><a class="tblock__v link" href={`mailto:${site.connect}`}>{site.connect}</a></div>
-          <div class="tblock__row"><span class="tblock__k">Existing clients</span><a class="tblock__v link" href={`mailto:${site.support}`}>{site.support}</a></div>
+          <div class="tblock__row"><span class="tblock__k">Training</span><a class="tblock__v link" href={`mailto:${site.connect}`}>{site.connect}</a></div>
+          <div class="tblock__row"><span class="tblock__k">Certificates</span><a class="tblock__v link" href={u('/verify')}>Verify a certificate</a></div>
         </div>
       </div>
       <div class="enq__form">
-        <EnquiryForm id="training-form" topic="training" submit="Send my enquiry" />
+        <p class="picked" data-picked hidden>Enquiring about <strong data-ref-title></strong> <button type="button" data-unpick>Any batch instead</button></p>
+        <EnquiryForm id="training-form" type="training" types={['training']} submit="Send my enquiry" />
       </div>
     </div>
   </section>
 </Base>
 
+<script>
+  import { mountPostings, pickInForm, clearPick } from '../../scripts/postings';
+  const note = document.querySelector<HTMLElement>('[data-picked]');
+  mountPostings({
+    kind: 'training',
+    root: document.querySelector<HTMLElement>('[data-batches]')!,
+    empty: 'No batch dates are published yet. Send an enquiry and we will tell you when the next one starts.',
+    action: 'Enquire about this batch',
+    onPick: (p) => pickInForm('training-form', p, note),
+  });
+  document.querySelector('[data-unpick]')?.addEventListener('click', () => clearPick('training-form', note));
+</script>
+
 <style>
   .t-hero { background: var(--navy-800); padding: calc(var(--nav-h) + clamp(40px, 6vw, 88px)) 0 clamp(64px, 8vw, 120px); }
   .t-hero__grid { display: grid; grid-template-columns: 1.1fr .9fr; gap: clamp(32px, 5vw, 88px); align-items: end; }
   .t-hero__copy { display: grid; gap: 28px; padding-bottom: 12px; }
-  .t-hero h1 { max-width: 12ch; }
+  .t-hero h1 { max-width: 13ch; font-size: clamp(2.8rem, 6.4vw, 6.4rem); }
   .t-hero__media { position: relative; }
-  .t-hero__block { position: absolute; left: -32px; bottom: 32px; width: min(360px, 90%); padding: 4px 0; }
+  .t-hero__block { position: absolute; left: -32px; bottom: 32px; width: min(380px, 92%); padding: 4px 0; }
   .t-hero__block :global(.tblock__row) { border-top-color: rgb(240 225 206 / .14); }
-  .t-live { color: var(--red-200); text-transform: uppercase; font-size: .875rem; }
+  .t-verify { color: var(--red-200); }
 
   .red { display: grid; gap: clamp(40px, 5vw, 72px); }
-  .red__h { font-size: clamp(2.8rem, 7vw, 7rem); max-width: 14ch; }
+  .red__h { font-size: clamp(2.8rem, 6.6vw, 6.6rem); max-width: 15ch; }
   .red__row { display: grid; grid-template-columns: 1.2fr 1fr; gap: clamp(32px, 5vw, 80px); align-items: end; }
   .red__list { list-style: none; margin: 0; padding: 0; display: grid; }
   .red__list li { padding: 22px 0; border-top: 1px solid rgb(240 225 206 / .35); font-size: 1.125rem; line-height: 1.5; }
   .red__list strong { display: block; font-family: var(--f-display); font-variation-settings: "wdth" 80, "opsz" 32; font-size: 1.6rem; line-height: 1.1; margin-bottom: 6px; }
-  .theme-red :global(.slot--ph) { background-color: var(--red-600); border-color: var(--red-400); color: var(--cream-300);
-    background-image: linear-gradient(rgb(240 225 206 / .1) 1px, transparent 1px), linear-gradient(90deg, rgb(240 225 206 / .1) 1px, transparent 1px); background-size: 40px 40px; }
+  .theme-red :global(.slot--ph) { background-color: var(--red-600); border-color: var(--red-400); color: var(--cream-300); }
+
+  .mod-head { display: grid; grid-template-columns: 1.3fr 1fr; gap: 32px; align-items: end; margin-bottom: clamp(40px, 5vw, 64px); }
+  .mods { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 16px; }
+  .mod { padding: 22px 20px; border-radius: 12px; background: var(--navy-600); border: 1px solid var(--navy-500); display: grid; gap: 12px; align-content: start; }
+  .mod__code { color: var(--red-300); font-size: var(--t-micro); }
+  .mod ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; color: var(--navy-100); font-size: var(--t-small); }
+  .mod li { padding-top: 8px; border-top: 1px solid var(--navy-500); }
 
   .cmp { align-items: start; row-gap: 48px; }
   .cmp__head { grid-column: 1 / 6; display: grid; gap: 28px; position: sticky; top: 120px; }
@@ -242,48 +240,22 @@ const gallery = [
   .compare td:nth-child(2) { color: var(--navy-400); }
   .compare td:last-child { font-weight: 600; }
 
-  .tr-head { display: grid; grid-template-columns: 1.3fr 1fr; gap: 32px; align-items: end; margin-bottom: clamp(40px, 5vw, 72px); }
-  .tr-head h2 { max-width: 15ch; }
-  .tr-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
-  .tr-card { display: grid; gap: 10px; height: 100%; padding: 12px 12px 24px; text-decoration: none; color: var(--cream-300); background: var(--navy-600); border: 1px solid var(--navy-500); border-radius: 10px; transition: transform .3s var(--ease), border-color .3s var(--ease); }
-  .tr-card:hover { transform: translateY(-2px); border-color: var(--red-400); }
-  .tr-card :global(.slot) { margin-bottom: 8px; }
-  .tr-card__top { display: flex; justify-content: space-between; padding-inline: 8px; font-size: var(--t-micro); }
-  .tr-card__ref { color: var(--red-300); }
-  .tr-card__mods { color: var(--navy-200); }
-  .tr-card__title { font-family: var(--f-display); font-variation-settings: "wdth" 78, "opsz" 48; font-weight: 740; font-size: 1.9rem; line-height: 1; padding-inline: 8px; }
-  .tr-card__short { color: var(--navy-100); padding-inline: 8px; }
-  .tr-card__go { display: inline-flex; align-items: center; gap: 8px; color: var(--red-300); font-weight: 600; padding: 8px 8px 0; }
-  .tr-card__go :global(svg) { width: 16px; transition: transform .25s var(--ease); }
-  .tr-card:hover .tr-card__go :global(svg) { transform: translateX(3px); }
-
-  .trn-head { align-items: end; margin-bottom: clamp(40px, 5vw, 64px); }
-  .trn-head h2 { grid-column: 1 / 8; }
-  .trn-head p { grid-column: 9 / 13; }
-  .trn { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; }
-  .trn__name { margin-top: 16px; font-weight: 600; font-size: 1.125rem; }
-  .trn__role { color: var(--navy-100); }
-  .trn__where { color: var(--red-300); margin-top: 4px; font-size: var(--t-micro); text-transform: uppercase; letter-spacing: .08em; }
-
   .jr { align-items: start; }
   .jr__head { grid-column: 1 / 6; display: grid; gap: 40px; position: sticky; top: 120px; }
   .jr__steps { grid-column: 7 / 13; list-style: none; margin: 0; padding: 0; }
-  .jr__steps li { display: grid; grid-template-columns: 64px 1fr; gap: 16px; padding: 32px 0; border-top: var(--hair); }
+  .jr__steps li { display: grid; grid-template-columns: 64px 1fr; gap: 16px; padding: 30px 0; border-top: var(--hair); }
   .jr__steps li:last-child { border-bottom: var(--hair); }
   .jr__n { color: var(--red-300); font-size: 1.6rem; line-height: 1; }
   .jr__steps h3 { margin-bottom: 8px; }
 
-  .fm-h { margin-bottom: clamp(40px, 5vw, 64px); }
-  .fm { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
-  .fm h3 { margin: 22px 0 10px; }
 
   .gl-head { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: end; margin-bottom: 24px; }
   .gl { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 16px; align-items: start; }
-  .gl__i--1 { grid-column: 1 / 6; }
-  .gl__i--2 { grid-column: 6 / 9; }
-  .gl__i--3 { grid-column: 9 / 13; }
-  .gl__i--4 { grid-column: 1 / 5; }
-  .gl__i--5 { grid-column: 5 / 13; }
+  .gl__i--1 { grid-column: 1 / 6; } .gl__i--2 { grid-column: 6 / 9; } .gl__i--3 { grid-column: 9 / 13; }
+  .gl__i--4 { grid-column: 1 / 5; } .gl__i--5 { grid-column: 5 / 13; }
+
+  .int { display: grid; grid-template-columns: 1.2fr 1fr; gap: clamp(32px, 5vw, 80px); align-items: end; }
+  .int h2 { font-size: clamp(2.6rem, 5vw, 5rem); }
 
   .faq__h { grid-column: 1 / 5; align-self: start; }
   .faq__list { grid-column: 6 / 13; border-top: 1px solid var(--cream-400); }
@@ -295,33 +267,32 @@ const gallery = [
   .faq__ic::before, .faq__ic::after { content: ""; position: absolute; left: 0; top: 8px; width: 18px; height: 2px; background: var(--red-500); transition: transform .3s var(--ease); }
   .faq__ic::after { transform: rotate(90deg); }
   details[open] .faq__ic::after { transform: rotate(0); }
-  details .body { padding: 0 0 24px; color: var(--navy-500); }
+  .faq details .body { padding: 0 0 24px; color: var(--navy-500); }
 
   .enq { align-items: start; }
   .enq__copy { grid-column: 1 / 6; --flow: 28px; }
   .enq__form { grid-column: 7 / 13; }
   .enq__tb .link { min-height: 0; justify-self: end; overflow-wrap: anywhere; }
 
+  @media (max-width: 1199px) { .mods { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
   @media (max-width: 1099px) {
-    .t-hero__grid, .red__row, .tr-head, .gl-head { grid-template-columns: 1fr; }
+    .t-hero__grid, .red__row, .mod-head, .gl-head, .int { grid-template-columns: 1fr; }
     .t-hero__block { left: 16px; bottom: 16px; }
-    .tr-grid, .fm { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .trn { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .cmp__head, .jr__head { position: static; }
   }
   @media (max-width: 899px) {
     .gl { grid-template-columns: 1fr 1fr; }
     .gl__i { grid-column: auto !important; }
     .gl__i--5 { grid-column: 1 / -1 !important; }
+    .mods { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
   @media (max-width: 599px) {
-    .tr-grid, .fm { grid-template-columns: 1fr; }
+    .mods { grid-template-columns: 1fr; }
     .t-hero__block { position: relative; left: 0; bottom: 0; width: 100%; margin-top: -48px; }
-    .compare tbody th { display: block; width: auto; padding-bottom: 0; border-bottom: 0; }
     .compare thead th:first-child { display: none; }
-    .compare tbody tr { display: grid; grid-template-columns: 1fr 1fr; column-gap: 12px; border-bottom: 1px solid rgb(26 40 65 / .18); }
-    .compare tbody th { grid-column: 1 / -1; }
-    .compare thead tr { display: grid; grid-template-columns: 1fr 1fr; column-gap: 12px; }
+    .compare tbody tr, .compare thead tr { display: grid; grid-template-columns: 1fr 1fr; column-gap: 12px; }
+    .compare tbody tr { border-bottom: 1px solid rgb(26 40 65 / .18); }
+    .compare tbody th { grid-column: 1 / -1; display: block; width: auto; padding-bottom: 0; border-bottom: 0; }
     .compare td { border-bottom: 0; }
     .jr__steps li { grid-template-columns: 48px 1fr; }
   }

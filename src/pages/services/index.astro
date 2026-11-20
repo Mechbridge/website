@@ -1,0 +1,151 @@
+---
+import { u } from '../../lib/url';
+import Base from '../../layouts/Base.astro';
+import ImageSlot from '../../components/ImageSlot.astro';
+import Arrow from '../../components/Arrow.astro';
+import { services, trainingOffering, projectProcess as process } from '../../data/services';
+
+const sectors = [
+  { id: 'sector-residential', name: 'Residential towers and villas' },
+  { id: 'sector-hospitality', name: 'Hotels and hospitality' },
+  { id: 'sector-retail', name: 'Malls and retail' },
+  { id: 'sector-health', name: 'Healthcare' },
+  { id: 'sector-industrial', name: 'Industrial and warehousing' },
+  { id: 'sector-offices', name: 'Offices and mixed use' },
+];
+const servicesLd = [{
+  '@type': 'ItemList',
+  name: 'MEP engineering services',
+  itemListElement: services.map((s, i) => ({ '@type': 'ListItem', position: i + 1, name: s.title, url: `https://mechbridgegroup.com/services/${s.slug}` })),
+}];
+---
+<Base og="services" breadcrumbs={[['Services', '/services']]} jsonLd={servicesLd} title="MEP engineering services" description="HVAC, firefighting and plumbing engineering, MEP design and shop drawings, estimation and project management, and professional training from Mechbridge International MEP Consultants.">
+  <section class="sh" data-enter aria-labelledby="sh-h">
+    <div class="wrap sh__grid">
+      <h1 id="sh-h">MEP engineering, from load calculations to as-built.</h1>
+      <div class="sh__side" data-enter-item>
+        <p class="lede">Mechbridge International MEP Consultants designs the mechanical, plumbing and fire systems of buildings across the GCC and India, then measures, prices and follows them through to handover.</p>
+        <div class="btn-row">
+          <a class="btn" href={u('/contact?topic=consultancy')}>Request a proposal <Arrow /></a>
+          <a class="btn btn--ghost" href="#offer">See the services</a>
+        </div>
+      </div>
+    </div>
+    <div class="wrap sh__img" data-enter-item>
+      <ImageSlot id="services-hero" ratio="21 / 8" alt="Plant room with chillers, pumps and red fire mains" label="Plant room: chillers, pumps, red fire mains" eager />
+    </div>
+  </section>
+
+  <section class="section g-navy" id="offer" aria-labelledby="offer-h">
+    <div class="wrap">
+      <h2 id="offer-h" class="offer__h" data-split>Six offerings, one engineering office.</h2>
+      <ul class="offer">
+        {services.map((s) => (
+          <li>
+            <a class="svc" href={u(`/services/${s.slug}`)}>
+              <ImageSlot id={s.img} ratio="16 / 10" alt={`${s.title}`} label={s.title} />
+              <span class="svc__ref mono">{s.ref}</span>
+              <span class="svc__t">{s.title}</span>
+              <span class="svc__hl">{s.highlights.join(' · ')}</span>
+              <span class="svc__d">{s.short}</span>
+              <span class="svc__go">View the scope <Arrow /></span>
+            </a>
+          </li>
+        ))}
+        <li>
+          <a class="svc svc--train" href={u('/training')}>
+            <ImageSlot id="services-teach" ratio="16 / 10" alt="Engineer explaining a ductwork detail to trainees" label="Training session at a drawing" />
+            <span class="svc__ref mono">T</span>
+            <span class="svc__t">{trainingOffering.title}</span>
+            <span class="svc__hl">{trainingOffering.highlights.join(' · ')}</span>
+            <span class="svc__d">{trainingOffering.short}</span>
+            <span class="svc__go">About the course <Arrow /></span>
+          </a>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="section g-cream theme-cream" aria-labelledby="pr-h">
+    <div class="wrap">
+      <h2 id="pr-h" class="pr__h" data-split>How a project moves through our office.</h2>
+      <ol class="pr">
+        {process.map(([t, d], i) => (
+          <li><span class="dot pr__n">{String(i + 1).padStart(2, '0')}</span><h3>{t}</h3><p class="body">{d}</p></li>
+        ))}
+      </ol>
+    </div>
+  </section>
+
+  <section class="section g-deep" aria-labelledby="sec-h">
+    <div class="wrap">
+      <h2 id="sec-h" class="sec__h" data-split>Buildings we engineer.</h2>
+      <ul class="sec">
+        {sectors.map((s) => (
+          <li><ImageSlot id={s.id} ratio="1 / 1" alt={s.name} label={s.name} /><p>{s.name}</p></li>
+        ))}
+      </ul>
+    </div>
+  </section>
+
+  <section class="section g-red theme-red" aria-labelledby="cta-h">
+    <div class="wrap xt">
+      <div class="stack">
+        <h2 id="cta-h" data-split>Send us the drawings.</h2>
+        <p class="lede">Tell us the project, its stage and the services you need. An engineer replies with scope, programme and fee.</p>
+        <div class="btn-row">
+          <a class="btn" href={u('/contact?topic=consultancy')}>Request a proposal <Arrow /></a>
+          <a class="link" href="mailto:connect@mechbridgegroup.com">connect@mechbridgegroup.com</a>
+        </div>
+      </div>
+      <ImageSlot id="services-cta" ratio="3 / 2" alt="MEP drawings spread across a desk with a laptop showing a model" label="Drawing set and model on a desk" />
+    </div>
+  </section>
+</Base>
+
+<style>
+  .sh { background: var(--navy-800); padding: calc(var(--nav-h) + clamp(40px, 6vw, 96px)) 0 clamp(56px, 7vw, 104px); }
+  .sh__grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: clamp(32px, 5vw, 80px); align-items: end; }
+  .sh h1 { max-width: 13ch; }
+  .sh__side { display: grid; gap: 28px; }
+  .sh__img { margin-top: clamp(48px, 6vw, 88px); }
+
+  .offer__h { max-width: 14ch; margin-bottom: clamp(40px, 5vw, 64px); }
+  .offer { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+  .svc { position: relative; display: grid; gap: 8px; align-content: start; height: 100%; padding: 12px 12px 24px; text-decoration: none; color: var(--cream-300); background: var(--navy-600); border: 1px solid var(--navy-500); border-radius: 10px; transition: transform .3s var(--ease), border-color .3s var(--ease); }
+  .svc:hover { transform: translateY(-2px); border-color: var(--red-400); }
+  .svc :global(.slot) { margin-bottom: 8px; }
+  .svc__ref { color: var(--red-300); padding-inline: 8px; font-size: var(--t-micro); }
+  .svc__t { font-family: var(--f-display); font-variation-settings: "wdth" 78, "opsz" 48; font-weight: 740; font-size: 1.85rem; line-height: 1; padding-inline: 8px; }
+  .svc__hl { padding-inline: 8px; font-weight: 600; font-size: var(--t-small); color: var(--cream-200); }
+  .svc__d { color: var(--navy-100); padding-inline: 8px; }
+  .svc__go { display: inline-flex; align-items: center; gap: 8px; color: var(--red-300); font-weight: 600; padding: 8px 8px 0; }
+  .svc__go :global(svg) { width: 16px; transition: transform .25s var(--ease); }
+  .svc:hover .svc__go :global(svg) { transform: translateX(3px); }
+  .svc--train { background: var(--navy-800); border-style: dashed; }
+
+  .pr__h { max-width: 16ch; margin-bottom: clamp(40px, 5vw, 72px); }
+  .pr { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); border-top: 2px solid var(--red-500); }
+  .pr li { padding: 28px 24px 0 0; display: grid; gap: 10px; align-content: start; }
+  .pr__n { color: var(--red-500); font-size: 1.4rem; }
+
+  .sec__h { margin-bottom: clamp(40px, 5vw, 64px); }
+  .sec { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 16px; }
+  .sec p { margin-top: 14px; font-weight: 600; }
+
+  .xt { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(40px, 6vw, 96px); align-items: center; }
+  .xt h2 { font-size: clamp(2.8rem, 6vw, 6rem); }
+  .theme-red :global(.slot--ph) { background-color: var(--red-600); border-color: var(--red-400); color: var(--cream-300); }
+
+  @media (max-width: 1099px) {
+    .offer { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .sec { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .pr { grid-template-columns: 1fr 1fr; row-gap: 32px; }
+  }
+  @media (max-width: 899px) { .sh__grid, .xt { grid-template-columns: 1fr; } }
+  @media (max-width: 599px) {
+    .offer, .pr { grid-template-columns: 1fr; }
+    .sec { grid-template-columns: 1fr 1fr; }
+    .sh__img :global(.slot) { --ar: 4 / 3 !important; }
+  }
+</style>

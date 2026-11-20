@@ -1,12 +1,43 @@
 ---
-import { tracks } from '../data/tracks';
-import { site } from '../data/site';
+// One form for every lead: proposals, training, internships, job applications and support.
+// Posts through the client API: /api/leads on the VPS, localStorage in the GitHub demo.
 import Arrow from './Arrow.astro';
-interface Props { topic?: 'training' | 'consultancy' | 'support'; track?: string; id?: string; submit?: string }
-const { topic = 'training', track = '', id = 'enquiry', submit = 'Send enquiry' } = Astro.props;
-const key = import.meta.env.PUBLIC_WEB3FORMS_KEY ?? '';
+import { site } from '../data/site';
+import { services } from '../data/services';
+import type { LeadType } from '../lib/api/types';
+
+interface Props {
+  id?: string;
+  type?: LeadType;
+  types?: LeadType[]; // topics offered in the selector; one entry hides the selector
+  submit?: string;
+  cv?: boolean; // show CV upload (job and internship applications)
+  refId?: string; // posting id, set by script for careers/internship pages
+  serviceSelect?: boolean; // show "which service" for proposals
+  service?: string; // preselected service title
+  mail?: string; // address shown as the email alternative (defaults to connect@)
+}
+const { id = 'enquiry', type = 'consultancy', types = ['consultancy', 'training', 'internship', 'job', 'support', 'contact'], submit = 'Send', cv = false, refId = '', serviceSelect = false, service = '', mail = site.connect } = Astro.props;
+const MAIL_FOR: Partial<Record<LeadType, string>> = { support: site.support, job: site.careers, internship: site.intern };
+const LABELS: Record<LeadType, string> = {
+  consultancy: 'Request a proposal',
+  training: 'Training course',
+  internship: 'Internship package',
+  job: 'Job application',
+  support: 'Support for an existing project',
+  contact: 'Something else',
+};
 ---
-<form class="form" id={id} data-enquiry data-key={key} data-mailto={site.connect} novalidate>
+<form class="form" id={id} data-enquiry data-mailto={mail} data-mail-for={JSON.stringify(MAIL_FOR)} novalidate>
+  <input type="hidden" name="ref_id" value={refId} data-ref />
+  {types.length > 1 ? (
+    <div class="field">
+      <label for={`${id}-type`}>What is this about?</label>
+      <select id={`${id}-type`} name="type" data-type>
+        {types.map((t) => <option value={t} selected={t === type}>{LABELS[t]}</option>)}
+      </select>
+    </div>
+  ) : <input type="hidden" name="type" value={types[0]} data-type />}
   <div class="form__row">
     <div class="field">
       <label for={`${id}-name`}>Full name</label>
@@ -21,29 +52,15 @@ const key = import.meta.env.PUBLIC_WEB3FORMS_KEY ?? '';
   </div>
   <div class="form__row">
     <div class="field">
-      <label for={`${id}-topic`}>What is this about?</label>
-      <select id={`${id}-topic`} name="topic" data-topic>
-        <option value="training" selected={topic === 'training'}>Training</option>
-        <option value="consultancy" selected={topic === 'consultancy'}>A project (consultancy)</option>
-        <option value="support" selected={topic === 'support'}>Support for an existing project</option>
-      </select>
-    </div>
-    <div class="field" data-track-field>
-      <label for={`${id}-track`}>Training track</label>
-      <select id={`${id}-track`} name="track">
-        <option value="">Not sure yet</option>
-        {tracks.map((t) => <option value={t.title} selected={track === t.slug}>{t.title}</option>)}
-      </select>
-    </div>
-  </div>
-  <div class="form__row">
-    <div class="field">
       <label for={`${id}-country`}>Where are you based?</label>
       <select id={`${id}-country`} name="country" autocomplete="country-name">
         <option>United Arab Emirates</option>
         <option>Saudi Arabia</option>
+        <option>Qatar</option>
+        <option>Kuwait</option>
+        <option>Bahrain</option>
+        <option>Oman</option>
         <option>India</option>
-        <option>Another GCC country</option>
         <option>Somewhere else</option>
       </select>
     </div>
@@ -52,15 +69,31 @@ const key = import.meta.env.PUBLIC_WEB3FORMS_KEY ?? '';
       <input id={`${id}-phone`} name="phone" type="tel" autocomplete="tel" inputmode="tel" />
     </div>
   </div>
+  {serviceSelect && (
+    <div class="field" data-show-for="consultancy">
+      <label for={`${id}-subject`}>Which service?</label>
+      <select id={`${id}-subject`} name="subject">
+        <option value="">Several, or not sure yet</option>
+        {services.map((s) => <option selected={s.title === service}>{s.title}</option>)}
+      </select>
+    </div>
+  )}
   <div class="field">
     <label for={`${id}-msg`}>Message</label>
-    <textarea id={`${id}-msg`} name="message" required aria-describedby={`${id}-msg-err`} placeholder="Your background, the track you're looking at, or the project you need help with."></textarea>
+    <textarea id={`${id}-msg`} name="message" required aria-describedby={`${id}-msg-err`} data-msg></textarea>
     <p class="err" id={`${id}-msg-err`} aria-live="polite"></p>
   </div>
+  {cv && (
+    <div class="field" data-show-for="job internship">
+      <label for={`${id}-cv`}>CV <span class="hint">(PDF or Word, up to 5 MB, optional)</span></label>
+      <input id={`${id}-cv`} name="cv" type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" aria-describedby={`${id}-cv-err`} />
+      <p class="err" id={`${id}-cv-err`} aria-live="polite"></p>
+    </div>
+  )}
   <input type="checkbox" name="botcheck" class="sr-only" tabindex="-1" autocomplete="off" aria-hidden="true" />
   <div class="btn-row">
     <button class="btn" type="submit">{submit}<Arrow /></button>
-    <p class="body form__alt">Or write to <a class="link" href={`mailto:${site.connect}`}>{site.connect}</a></p>
+    <p class="body form__alt">Or write to <a class="link" href={`mailto:${mail}`} data-alt-mail>{mail}</a></p>
   </div>
   <p class="form__status" role="status" aria-live="polite" data-status></p>
 </form>
@@ -68,69 +101,76 @@ const key = import.meta.env.PUBLIC_WEB3FORMS_KEY ?? '';
 <style>
   .form__alt { font-size: var(--t-small); }
   .form__alt .link { min-height: 0; }
+  input[type="file"] { padding: 12px; min-height: 52px; }
+  input[type="file"]::file-selector-button { font: inherit; font-weight: 600; margin-right: 12px; padding: 8px 14px; border-radius: var(--radius); border: 1px solid var(--color-border-strong); background: var(--color-surface-raised); color: var(--color-text); cursor: pointer; }
 </style>
 
 <script>
-  const SUPPORT = 'support@mechbridgegroup.com';
+  import { api } from '../lib/api/client';
+  const PLACEHOLDERS: Record<string, string> = {
+    consultancy: 'The project, its location and stage, and the services you need.',
+    training: 'Your background and when you would like to start.',
+    internship: 'Your degree, year of study and when you can start.',
+    job: 'The role you are applying for and a short note on your experience.',
+    support: 'The project name and what you need from us.',
+    contact: 'How can we help?',
+  };
   document.querySelectorAll<HTMLFormElement>('form[data-enquiry]').forEach((form) => {
     const status = form.querySelector<HTMLElement>('[data-status]')!;
-    const topic = form.querySelector<HTMLSelectElement>('[data-topic]')!;
-    const trackField = form.querySelector<HTMLElement>('[data-track-field]')!;
-    const syncTopic = () => { trackField.hidden = topic.value !== 'training'; };
-    topic.addEventListener('change', syncTopic);
-    syncTopic();
+    const type = form.querySelector<HTMLInputElement | HTMLSelectElement>('[data-type]')!;
+    const msg = form.querySelector<HTMLTextAreaElement>('[data-msg]')!;
+    const sync = () => {
+      form.querySelectorAll<HTMLElement>('[data-show-for]').forEach((el) => { el.hidden = !el.dataset.showFor!.split(' ').includes(type.value); });
+      msg.placeholder = PLACEHOLDERS[type.value] ?? '';
+      // The email alternative follows the topic: careers@, intern@, support@ or the page default.
+      const alt = form.querySelector<HTMLAnchorElement>('[data-alt-mail]');
+      if (alt && form.querySelector('select[data-type]')) {
+        const to = (JSON.parse(form.dataset.mailFor || '{}') as Record<string, string>)[type.value] || form.dataset.mailto!;
+        alt.href = `mailto:${to}`; alt.textContent = to;
+      }
+    };
+    type.addEventListener('change', sync);
+    sync();
 
-    const setErr = (name: string, msg: string) => {
-      const input = form.elements.namedItem(name) as HTMLInputElement;
+    const setErr = (name: string, text: string) => {
+      const input = form.elements.namedItem(name) as HTMLInputElement | null;
+      if (!input) return true;
       const err = form.querySelector<HTMLElement>(`#${input.getAttribute('aria-describedby')}`);
-      input.setAttribute('aria-invalid', msg ? 'true' : 'false');
-      if (err) err.textContent = msg;
-      return !msg;
+      input.setAttribute('aria-invalid', text ? 'true' : 'false');
+      if (err) err.textContent = text;
+      return !text;
     };
     const validate = () => {
       const d = new FormData(form);
-      const name = String(d.get('name') || '').trim();
-      const email = String(d.get('email') || '').trim();
-      const msg = String(d.get('message') || '').trim();
-      const ok = [
-        setErr('name', name ? '' : 'Add your name so we know who to reply to.'),
-        setErr('email', /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? '' : 'Enter an email address we can reply to, like name@company.com.'),
-        setErr('message', msg.length >= 10 ? '' : 'Tell us a little more, at least a sentence.'),
-      ];
-      return ok.every(Boolean);
+      const cv = d.get('cv');
+      const cvOk = !(cv instanceof File) || !cv.size || (/\.(pdf|docx?)$/i.test(cv.name) && cv.size <= 5 * 1024 * 1024);
+      return [
+        setErr('name', String(d.get('name') || '').trim() ? '' : 'Add your name so we know who to reply to.'),
+        setErr('email', /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(d.get('email') || '').trim()) ? '' : 'Enter an email address we can reply to, like name@company.com.'),
+        setErr('message', String(d.get('message') || '').trim().length >= 10 ? '' : 'Tell us a little more, at least a sentence.'),
+        setErr('cv', cvOk ? '' : 'Attach a PDF or Word file under 5 MB, or leave it empty.'),
+      ].every(Boolean);
     };
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       status.textContent = '';
       if (!validate()) { (form.querySelector('[aria-invalid="true"]') as HTMLElement)?.focus(); return; }
-      const d = new FormData(form);
-      const t = String(d.get('topic'));
-      const subject = t === 'training' ? `Training enquiry${d.get('track') ? `: ${d.get('track')}` : ''}` : t === 'support' ? 'Support request' : 'Project enquiry';
-      const key = form.dataset.key;
-      if (!key) {
-        const to = t === 'support' ? SUPPORT : form.dataset.mailto;
-        const body = ['name', 'email', 'country', 'phone', 'track', 'message'].map((k) => `${k}: ${d.get(k) ?? ''}`).join('\n');
-        window.location.href = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-        status.dataset.state = 'ok';
-        status.textContent = 'Your email app should open with the message filled in. Press send there to reach us.';
-        return;
-      }
       const btn = form.querySelector<HTMLButtonElement>('button[type="submit"]')!;
       btn.setAttribute('aria-busy', 'true');
-      d.append('access_key', key);
-      d.append('subject', subject);
-      d.append('from_name', 'mechbridgegroup.com');
       try {
-        const res = await fetch('https://api.web3forms.com/submit', { method: 'POST', body: d, headers: { Accept: 'application/json' } });
-        const json = await res.json();
-        if (!res.ok || !json.success) throw new Error(json.message || 'Send failed');
-        form.reset(); syncTopic();
+        await api.submitLead(new FormData(form));
+        const keepType = type.value, keepRef = form.querySelector<HTMLInputElement>('[data-ref]')!.value;
+        form.reset();
+        type.value = keepType; form.querySelector<HTMLInputElement>('[data-ref]')!.value = keepRef; sync();
         status.dataset.state = 'ok';
-        status.textContent = "Thanks, your message is with us. We'll reply to the email address you gave.";
-      } catch {
+        status.textContent = api.demo
+          ? 'Sent. In this demo your message is saved in your browser and shows up under Leads in the admin portal.'
+          : "Thanks, your message is with us. We'll reply to the email address you gave.";
+      } catch (err) {
         status.dataset.state = 'error';
-        status.textContent = `That didn't send. Check your connection and try again, or email ${form.dataset.mailto} directly.`;
+        const to = (JSON.parse(form.dataset.mailFor || '{}') as Record<string, string>)[type.value] || form.dataset.mailto;
+        status.textContent = `${(err as Error).message || "That didn't send."} You can also email ${to} directly.`;
       } finally {
         btn.removeAttribute('aria-busy');
       }

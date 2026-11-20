@@ -18,6 +18,8 @@ export function initClay() {
     paintTarget: ground,
     layout: parse(clay.dataset.layout),
     mobileLayout: parse(clay.dataset.layoutMobile),
+    bandBreakpoint: Number(clay.dataset.band) || 768,
+    bandSize: 168,
   };
 
   const measure = () => {

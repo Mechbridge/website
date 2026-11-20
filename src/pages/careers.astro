@@ -1,0 +1,99 @@
+---
+import { u } from '../lib/url';
+import Base from '../layouts/Base.astro';
+import ImageSlot from '../components/ImageSlot.astro';
+import EnquiryForm from '../components/EnquiryForm.astro';
+import { site, servesShort } from '../data/site';
+import Arrow from '../components/Arrow.astro';
+
+const reasons = [
+  ['Every MEP discipline in one office', 'HVAC, firefighting and plumbing engineers, draughtspeople and quantity surveyors work on the same projects and review each other’s drawings.'],
+  ['Projects across the GCC and India', 'Teams in Dubai and India deliver for clients in the UAE, Saudi Arabia, Qatar, Kuwait, Bahrain, Oman and India, with one set of standards between them.'],
+  ['A training team in the building', 'The engineers who run our professional training course review work across the office too.'],
+];
+---
+<Base og="careers" breadcrumbs={[['Careers', '/careers']]} title="Careers" description="Open roles at Mechbridge International MEP Consultants for HVAC, firefighting and plumbing engineers, MEP draughtspeople and quantity surveyors in the UAE, Saudi Arabia, Qatar, Kuwait, Bahrain, Oman and India.">
+  <section class="ch" data-enter aria-labelledby="ch-h">
+    <div class="wrap ch__grid">
+      <div class="ch__copy">
+        <h1 id="ch-h">Careers in MEP engineering.</h1>
+        <p class="lede" data-enter-item>We hire engineers, draughtspeople and quantity surveyors for HVAC, firefighting and plumbing work. We hire in the UAE, Saudi Arabia, Qatar, Kuwait, Bahrain, Oman and India.</p>
+        <div class="btn-row" data-enter-item>
+          <a class="btn" href="#roles">See open roles <Arrow /></a>
+          <a class="btn btn--ghost" href="#apply">Send a general application</a>
+        </div>
+      </div>
+      <div data-enter-item>
+        <ImageSlot id="careers-hero" ratio="4 / 3" alt="Engineers reviewing MEP drawings around a table" label="Drawing review around a table" eager />
+      </div>
+    </div>
+  </section>
+
+  <section class="section g-navy" id="roles" aria-labelledby="r-h">
+    <div class="wrap">
+      <div class="r-head">
+        <h2 id="r-h" data-split>Open roles.</h2>
+        <p class="body">Open a role to read the full description, then apply with your CV.</p>
+      </div>
+      <div class="hire">
+        <p class="mono hire__k">Where we hire</p>
+        <ul class="chips" aria-label="Hiring locations">{servesShort.map((c) => <li>{c}</li>)}</ul>
+      </div>
+      <div class="posts" data-roles></div>
+    </div>
+  </section>
+
+  <section class="section g-cream theme-cream" aria-labelledby="why-h">
+    <div class="wrap">
+      <h2 id="why-h" class="why__h" data-split>Why engineers join Mechbridge.</h2>
+      <ul class="why">{reasons.map(([t, d]) => <li><h3>{t}</h3><p class="body">{d}</p></li>)}</ul>
+      <p class="body why__note">Students and fresh graduates: the <a class="link" href={u('/internships')}>GCC-Ready Internship Package</a> is the usual way in.</p>
+    </div>
+  </section>
+
+  <section class="section g-navy" id="apply" aria-labelledby="ap-h">
+    <div class="wrap grid-12 enq">
+      <div class="enq__copy stack">
+        <h2 id="ap-h" data-split>Apply.</h2>
+        <p class="lede">Choose a role above, or send a general application with the discipline and country you are interested in.</p>
+      </div>
+      <div class="enq__form">
+        <p class="picked" data-picked hidden>Applying for <strong data-ref-title></strong> <button type="button" data-unpick>Make it a general application</button></p>
+        <EnquiryForm id="job-form" type="job" types={['job']} cv mail={site.careers} submit="Send my application" />
+      </div>
+    </div>
+  </section>
+</Base>
+
+<script>
+  import { mountPostings, pickInForm, clearPick } from '../scripts/postings';
+  const note = document.querySelector<HTMLElement>('[data-picked]');
+  mountPostings({
+    kind: 'job',
+    root: document.querySelector<HTMLElement>('[data-roles]')!,
+    empty: 'There are no open roles right now. Send a general application and we will keep your CV on file.',
+    action: 'Apply for this role',
+    details: true,
+    onPick: (p) => pickInForm('job-form', p, note),
+  });
+  document.querySelector('[data-unpick]')?.addEventListener('click', () => clearPick('job-form', note));
+</script>
+
+<style>
+  .ch { background: var(--navy-800); padding: calc(var(--nav-h) + clamp(40px, 6vw, 88px)) 0 clamp(56px, 7vw, 104px); }
+  .ch__grid { display: grid; grid-template-columns: 1.15fr .85fr; gap: clamp(32px, 5vw, 80px); align-items: end; }
+  .ch__copy { display: grid; gap: 28px; }
+  .ch h1 { max-width: 12ch; }
+  .hire { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; margin: 0 0 clamp(24px, 3vw, 40px); }
+  .hire__k { color: var(--navy-200); font-size: var(--t-micro); text-transform: uppercase; letter-spacing: .1em; }
+  .r-head { display: grid; grid-template-columns: 1.3fr 1fr; gap: 32px; align-items: end; margin-bottom: clamp(32px, 4vw, 56px); }
+  .why__h { max-width: 16ch; margin-bottom: clamp(40px, 5vw, 64px); }
+  .why { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px; }
+  .why li { border-top: 2px solid var(--red-500); padding-top: 18px; display: grid; gap: 10px; align-content: start; }
+  .why__note { margin-top: 48px; }
+  .why__note .link { min-height: 0; }
+  .enq { align-items: start; }
+  .enq__copy { grid-column: 1 / 6; --flow: 28px; }
+  .enq__form { grid-column: 7 / 13; }
+  @media (max-width: 899px) { .ch__grid, .r-head, .why { grid-template-columns: 1fr; } }
+</style>

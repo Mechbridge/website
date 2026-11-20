@@ -778,18 +778,22 @@ class Component extends DCLogic {
   _resize(W, H, viewH) {
     var T = window.THREE, gl = this._gl;
     gl.W = W; gl.H = H; gl.vh = viewH;
-    var dpr = Math.min(window.devicePixelRatio || 1, W < 768 ? 1.5 : 2, 4096 / viewH, 4096 / W, Math.sqrt(6e6 / (W * viewH)));
+    // Mechbridge site: below props.bandBreakpoint (phones and tablets) pieces sit in a band at the top
+    // of each section, are capped in size, and the cord runs down the side gutter instead of behind text.
+    var band = W < (this.props.bandBreakpoint || 768) && !!this.props.mobileLayout;
+    var dpr = Math.min(window.devicePixelRatio || 1, band ? 1.5 : 2, 4096 / viewH, 4096 / W, Math.sqrt(6e6 / (W * viewH)));
     gl.renderer.setPixelRatio(dpr);
     gl.renderer.setSize(W, viewH, false);
     var sec = H / 10;
-    var side = Math.max(150, Math.min(520, Math.sqrt(0.15 * W * sec))) * (W >= 900 ? 0.6 : W < 768 ? 0.5 : 1);
+    var side = band
+      ? Math.max(104, Math.min(this.props.bandSize || 168, Math.sqrt(0.15 * W * sec) * 0.5))
+      : Math.max(150, Math.min(520, Math.sqrt(0.15 * W * sec))) * (W >= 900 ? 0.6 : 1);
     var unit = side / 2.8;
-    gl.side = side; gl.sec = sec; gl.unit = unit;
+    gl.side = side; gl.sec = sec; gl.unit = unit; gl.band = band;
     var pts = [];
     for (var i = 0; i < gl.pieces.length; i++) {
       var p = gl.pieces[i];
-      // Mechbridge site: phones use their own layout (pieces in a band at the top of each section).
-      var sp = (W < 768 && this.props.mobileLayout && this.props.mobileLayout[i]) || p.spec;
+      var sp = (band && this.props.mobileLayout[i]) || p.spec;
       var x = Math.max(side / 2 + 8, Math.min(W - side / 2 - 8, sp.x * W));
       var top = this._band(i) * H, sh = (this._band(i + 1) - this._band(i)) * H;
       var y = sp.ypx != null ? top + sp.ypx : top + sp.y * sh;
@@ -801,7 +805,17 @@ class Component extends DCLogic {
       var a = gl.pieces[i], b = gl.pieces[i + 1];
       var outA = a.x > W / 2 ? 1 : -1;
       if (i === 0) pts.push([a.x + outA * side * 0.2, -30], [a.x, a.y - side * 0.36]);
-      if (b) {
+      if (b && band) {
+        // Drop from the piece to the outer gutter, run down beside the card, and swing across
+        // the empty band at the section boundary into the next piece.
+        var edgeB = this._band(i + 1) * H;
+        var gx = outA > 0 ? W - 7 : 7;
+        pts.push([a.x, a.y + side * 0.42]);
+        pts.push([gx, a.y + side * 0.95]);
+        pts.push([gx, edgeB - 40]);
+        pts.push([gx, edgeB + 6]);
+        pts.push([b.x, b.y - side * 0.42]);
+      } else if (b) {
         pts.push([a.x, a.y + side * 0.36]);
         var edge = this._band(i + 1) * H;
         var outB = b.x > W / 2 ? 1 : -1;
@@ -819,9 +833,10 @@ class Component extends DCLogic {
     if (pts.length > 2) {
       var v = [];
       for (i = 0; i < pts.length; i++) v.push(new T.Vector3(pts[i][0], -pts[i][1], -unit * 2.2 + 12 * Math.sin(i * 1.7)));
-      var curve = new T.CatmullRomCurve3(v, false, 'catmullrom', 0.5);
+      // Centripetal on the band layout: no loops or overshoot at the gutter corners.
+      var curve = new T.CatmullRomCurve3(v, false, band ? 'centripetal' : 'catmullrom', 0.5);
       var segs = 520 * gl.pieces.length;
-      var rad = Math.max(3, unit * 0.034);
+      var rad = band ? 2.6 : Math.max(3, unit * 0.034);
       var geo = new T.TubeGeometry(curve, segs, rad, 8, false);
       gl.cord = new T.Mesh(geo, gl.cordMat);
       gl.cord.castShadow = false;

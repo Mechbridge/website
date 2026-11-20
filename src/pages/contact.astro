@@ -2,34 +2,43 @@
 import Base from '../layouts/Base.astro';
 import ImageSlot from '../components/ImageSlot.astro';
 import EnquiryForm from '../components/EnquiryForm.astro';
-import { site, offices } from '../data/site';
+import { site, offices, servesShort } from '../data/site';
 ---
-<Base title="Contact" description="Contact Mechbridge International about a project, training or support. Write to connect@mechbridgegroup.com or support@mechbridgegroup.com.">
+<Base og="contact" breadcrumbs={[['Contact', '/contact']]} jsonLd={[{ '@type': 'ContactPage', url: 'https://mechbridgegroup.com/contact', about: { '@id': 'https://mechbridgegroup.com/#organization' } }]} title="Contact" description="Contact Mechbridge International MEP Consultants for a proposal, training, internships, careers or support. connect@mechbridgegroup.com and support@mechbridgegroup.com.">
   <section class="ch" data-enter aria-labelledby="ch-h">
     <div class="wrap grid-12 ch__grid">
       <div class="ch__copy">
         <h1 id="ch-h">Talk to an engineer.</h1>
-        <p class="lede" data-enter-item>Projects, training or support: tell us what you need and the right team will reply.</p>
+        <p class="lede" data-enter-item>Proposals, training, internships, careers or support: choose a topic and the right team replies.</p>
         <div class="mails" data-enter-item>
           <a class="mail" href={`mailto:${site.connect}`}>
-            <span class="mono mail__k">Projects and training</span>
+            <span class="mono mail__k">Proposals and training</span>
             <span class="mail__v">{site.connect}</span>
           </a>
           <a class="mail" href={`mailto:${site.support}`}>
             <span class="mono mail__k">Support for existing clients</span>
             <span class="mail__v">{site.support}</span>
           </a>
+          <a class="mail" href={`mailto:${site.careers}`}>
+            <span class="mono mail__k">Careers</span>
+            <span class="mail__v">{site.careers}</span>
+          </a>
+          <a class="mail" href={`mailto:${site.intern}`}>
+            <span class="mono mail__k">Internships</span>
+            <span class="mail__v">{site.intern}</span>
+          </a>
         </div>
       </div>
       <div class="ch__form" data-enter-item>
-        <EnquiryForm id="contact-form" topic="consultancy" submit="Send message" />
+        <EnquiryForm id="contact-form" type="consultancy" serviceSelect cv submit="Send message" />
       </div>
     </div>
   </section>
 
   <section class="section g-cream theme-cream" aria-labelledby="co-h">
     <div class="wrap">
-      <h2 id="co-h" class="co__h" data-split>Our offices in Dubai, India and Saudi Arabia.</h2>
+      <h2 id="co-h" class="co__h" data-split>Headquartered in Dubai, operating from Dubai and India.</h2>
+      <div class="co__serves"><p class="mono co__k">Serving</p><ul class="chips" aria-label="Countries we serve">{servesShort.map((c) => <li>{c}</li>)}</ul></div>
       <ul class="co">
         {offices.map((o) => (
           <li>
@@ -44,6 +53,13 @@ import { site, offices } from '../data/site';
   </section>
 </Base>
 
+<script>
+  // /contact?topic=training preselects the topic.
+  const t = new URLSearchParams(location.search).get('topic');
+  const sel = document.querySelector<HTMLSelectElement>('#contact-form [data-type]');
+  if (t && sel && [...sel.options].some((o) => o.value === t)) { sel.value = t; sel.dispatchEvent(new Event('change')); }
+</script>
+
 <style>
   .ch { background: var(--navy-800); padding: calc(var(--nav-h) + clamp(40px, 6vw, 88px)) 0 clamp(64px, 8vw, 120px); }
   .ch__grid { align-items: start; }
@@ -56,9 +72,12 @@ import { site, offices } from '../data/site';
   .mail__v { font-family: var(--f-display); font-variation-settings: "wdth" 80, "opsz" 48; font-weight: 700; font-size: clamp(1.3rem, 2.2vw, 2rem); line-height: 1.1; overflow-wrap: anywhere; }
   .mail:hover .mail__v { color: var(--red-300); }
 
-  .co__h { margin-bottom: clamp(40px, 5vw, 64px); }
-  .co { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+  .co__h { margin-bottom: 24px; }
+  .co__serves { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; margin-bottom: clamp(36px, 5vw, 56px); }
+  .co__k { color: var(--navy-400); font-size: var(--t-micro); text-transform: uppercase; letter-spacing: .1em; }
+  .co__serves .chips li { border-color: rgb(26 40 65 / .25); }
+  .co { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; max-width: 980px; }
   .co h3 { margin-top: 20px; }
   .co__role { color: var(--red-500); text-transform: uppercase; letter-spacing: .1em; font-size: var(--t-micro); margin: 6px 0 8px; }
-  @media (max-width: 899px) { .co { grid-template-columns: 1fr; } }
+  @media (max-width: 599px) { .co { grid-template-columns: 1fr; } }
 </style>

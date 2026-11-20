@@ -2,30 +2,42 @@
 import { u } from '../lib/url';
 import Base from '../layouts/Base.astro';
 import ImageSlot from '../components/ImageSlot.astro';
-import FlutedGlass from '../components/FlutedGlass.astro';
 import Arrow from '../components/Arrow.astro';
-import { tracks } from '../data/tracks';
-import { site, offices } from '../data/site';
-import { compare, steps } from '../data/training';
+import { site, offices, servesShort } from '../data/site';
+import { services, serviceBySlug, projectProcess, codesWeUse } from '../data/services';
 
-const disciplines = [
-  { ref: 'M', name: 'HVAC and ventilation', note: 'Cooling for 46°C summers, fresh air, smoke control' },
-  { ref: 'P', name: 'Plumbing and drainage', note: 'Water supply, drainage, storm, plant rooms' },
-  { ref: 'E', name: 'Power and lighting', note: 'Load schedules, single lines, utility submissions' },
-  { ref: 'ELV', name: 'Low-current systems', note: 'Data, security, PA, BMS integration' },
-  { ref: 'BIM', name: 'BIM coordination', note: 'Revit models, clash detection, issue-ready sheets' },
+const hvac = serviceBySlug('hvac-engineering')!;
+const fire = serviceBySlug('firefighting-engineering')!;
+const plumbing = serviceBySlug('plumbing-engineering')!;
+const design = serviceBySlug('mep-design')!;
+const est = serviceBySlug('mep-estimation-project-management')!;
+
+const designRows = [
+  ['CAD drafting', 'Concept to IFC, schematics and risers, PDF-to-CAD conversion'],
+  ['Coordination', 'Ceiling coordination, combined services, slab and wall openings'],
+  ['Shop drawings', 'Ductwork and piping per discipline, plant rooms, supports, builders’ work'],
 ];
-const codes = ['UAE Fire & Life Safety Code', 'Saudi Building Code', 'NFPA 13 / 14 / 20 / 72', 'ASHRAE 62.1 / 90.1', 'DEWA regulations', 'SEC distribution code', 'Dubai Municipality', 'Dubai Civil Defence', 'Al Sa’fat', 'Estidama'];
+const estRows = [
+  ['BOQ', 'HVAC, firefighting, plumbing and combined MEP BOQs'],
+  ['Cost estimation', 'Unit rates, supply-and-install analysis, budgets, value engineering'],
+  ['Tendering', 'Tender BOQs, pricing support and vendor quotation comparison'],
+  ['Project execution', 'Variations, change orders and final quantity reconciliation'],
+];
+const hvacSystems = ['Chilled water', 'VRF and VRV', 'DX and split', 'Ventilation and exhaust', 'Smoke management', 'Pressurisation'];
+
 // Clay piece positions for this page (fractions of width / of each section). Content sits on the other side.
 const clayDesktop = [
   { x: 0.87, y: 0.3 }, { x: 0.12, y: 0.62 }, { x: 0.86, y: 0.58 }, { x: 0.12, y: 0.3 }, { x: 0.87, y: 0.78 },
   { x: 0.88, y: 0.26 }, { x: 0.09, y: 0.16 }, { x: 0.88, y: 0.26 }, { x: 0.87, y: 0.74 }, { x: 0.13, y: 0.52 },
 ];
-const clayMobile = Array.from({ length: 10 }, (_, i) => ({ x: i % 2 ? 0.26 : 0.74, ypx: 128 }));
+// Phones and tablets (< 1100px): pieces sit in the top band of each section, alternating sides.
+const clayMobile = Array.from({ length: 10 }, (_, i) => ({ x: i % 2 ? 0.24 : 0.76, ypx: 132 }));
 ---
 <Base
+  og="home"
+  ogAlt="Mechbridge International MEP Consultants: night skyline with red-edged towers"
   title={site.name}
-  description="Mechbridge International designs MEP, fire and life safety systems from Dubai, India and Saudi Arabia, and trains engineers on live Gulf projects."
+  description="Mechbridge International MEP Consultants: HVAC, firefighting and plumbing engineering, MEP design and shop drawings, estimation and project management. Headquartered in Dubai, serving the GCC and India."
   glassNav
 >
   <Fragment slot="outside">
@@ -38,94 +50,154 @@ const clayMobile = Array.from({ length: 10 }, (_, i) => ({ x: i % 2 ? 0.26 : 0.7
     <div class="hero__media" data-hero-photo>
       <img src={u('/images/hero-home.webp')} alt="" width="1672" height="941" fetchpriority="high" />
     </div>
+    <div class="hero__blur" aria-hidden="true"></div>
     <div class="hero__shade" aria-hidden="true"></div>
     <div class="wrap hero__inner">
       <div class="hero__copy">
-        <h1 id="hero-h">Engineering the buildings of the Gulf and India.</h1>
-        <p class="lede" data-enter-item>MEP, fire and life safety design from Dubai, India and Saudi Arabia. And training for the engineers who will build what comes next, taught on our live projects.</p>
+        <h1 id="hero-h">MEP consultants of the engineering shaping the Middle East.</h1>
+        <p class="lede" data-enter-item>HVAC, firefighting and plumbing engineering, MEP design and shop drawings, estimation and project management. Headquartered in Dubai, working across the UAE, Saudi Arabia, Qatar, Kuwait, Bahrain, Oman and India.</p>
         <div class="btn-row" data-enter-item>
-          <a class="btn" href={u('/training')}>Explore training <Arrow /></a>
-          <a class="btn btn--ghost" href={u('/services')}>See our services</a>
+          <a class="btn" href={u('/contact?topic=consultancy')}>Request a proposal <Arrow /></a>
+          <a class="btn btn--ghost" href={u('/services')}>Explore our services</a>
         </div>
       </div>
       <aside class="hero__block glass" data-enter-item aria-label="Mechbridge at a glance">
-        <div class="tblock__row"><span class="tblock__k">Headquarters</span><span class="tblock__v">Dubai · India</span></div>
-        <div class="tblock__row"><span class="tblock__k">Operations</span><span class="tblock__v">Saudi Arabia</span></div>
+        <div class="tblock__row"><span class="tblock__k">Company</span><span class="tblock__v">MEP Consultants</span></div>
+        <div class="tblock__row"><span class="tblock__k">Headquarters</span><span class="tblock__v">Dubai</span></div>
+        <div class="tblock__row"><span class="tblock__k">Operating from</span><span class="tblock__v">Dubai · India</span></div>
         <div class="tblock__row"><span class="tblock__k">In the industry</span><span class="tblock__v">15+ years</span></div>
-        <div class="tblock__row"><span class="tblock__k">Training</span><a class="tblock__v hero__live dot live" href={u('/training#enquire')}>Enrolling</a></div>
       </aside>
     </div>
     <a class="hero__cue dot" href="#who" aria-label="Scroll to the next section">Scroll <Arrow dir="down" /></a>
   </section>
 
-  <!-- ================= CLAY ZONE: 10 equal sections ================= -->
-  <div class="clay" id="clay" data-clay data-layout={JSON.stringify(clayDesktop)} data-layout-mobile={JSON.stringify(clayMobile)}>
+  <!-- ================= CLAY ZONE: 10 sections ================= -->
+  <div class="clay" id="clay" data-clay data-layout={JSON.stringify(clayDesktop)} data-layout-mobile={JSON.stringify(clayMobile)} data-band="1100">
 
-    <!-- 0 · house · navy -->
+    <!-- 0 · house · navy · WHO -->
     <section class="cs cs--L" id="who" aria-labelledby="s0-h">
       <div class="wrap cs__in">
         <div class="cs__card s0">
-          <h2 id="s0-h" data-split>Every system a building runs on, designed by one group.</h2>
-          <p class="lede">Mechbridge began as a team of MEP engineers. Fifteen years on, our offices in Dubai, India and Saudi Arabia take buildings from concept to authority approval to handover: the air, water, power and fire systems that make them work.</p>
-          <div class="s0__row">
-            <ImageSlot id="home-studio" ratio="4 / 3" alt="Mechbridge engineers around a drawing table in the Dubai office" label="Engineers reviewing drawings, Dubai office" />
-            <div class="tblock s0__tb">
-              <div class="tblock__row"><span class="tblock__k">Design</span><span class="tblock__v">MEP · BIM</span></div>
-              <div class="tblock__row"><span class="tblock__k">Safety</span><span class="tblock__v">Fire &amp; life safety</span></div>
-              <div class="tblock__row"><span class="tblock__k">Approvals</span><span class="tblock__v">UAE · KSA · India</span></div>
-              <div class="tblock__row"><span class="tblock__k">Training</span><span class="tblock__v">6 tracks</span></div>
-            </div>
-          </div>
-          <a class="link" href={u('/about')}>How Mechbridge works <Arrow /></a>
+          <h2 id="s0-h" data-split>One engineering office for every system behind the walls.</h2>
+          <p class="lede">Mechbridge International MEP Consultants designs, measures and follows through the mechanical, plumbing and fire systems of buildings. Our engineers have been in the industry for more than fifteen years and work to the codes each GCC authority enforces.</p>
+          <ul class="index">
+            {services.map((s) => (
+              <li><a href={u(`/services/${s.slug}`)}><span class="index__ref mono">{s.ref}</span><span class="index__t">{s.title}</span><span class="index__h">{s.highlights.join(' · ')}</span><Arrow /></a></li>
+            ))}
+          </ul>
         </div>
       </div>
     </section>
 
-    <!-- 1 · design · navy -->
+    <!-- 1 · design · navy · MEP DESIGN -->
     <section class="cs cs--R" aria-labelledby="s1-h">
       <div class="wrap cs__in">
         <div class="cs__card s1">
           <h2 id="s1-h" data-split>MEP design, drawn to be built.</h2>
           <div class="s1__row">
             <div class="stack">
-              <p class="body">Our drawings are made for the people who build from them: coordinated in BIM, clash-checked, and detailed to the level a site team needs on a Tuesday morning.</p>
+              <p class="body">{design.lede}</p>
               <ul class="register">
-                {disciplines.map((d) => (
-                  <li><span class="register__ref mono">{d.ref}</span><span class="register__name">{d.name}</span><span class="register__note">{d.note}</span></li>
-                ))}
+                {designRows.map(([t, n]) => <li><span class="register__name">{t}</span><span class="register__note">{n}</span></li>)}
               </ul>
-              <a class="link" href={u('/services')}>All design services <Arrow /></a>
+              <a class="link" href={u(`/services/${design.slug}`)}>The full design scope <Arrow /></a>
             </div>
-            <ImageSlot id="home-design" ratio="4 / 5" alt="Coordinated MEP model of a ceiling void with ducts, pipes and cable trays" label="Coordinated MEP model, ceiling void" />
+            <ImageSlot id="svc-mep" ratio="4 / 5" alt="Coordinated ducts, chilled water pipes and cable trays in a ceiling void" label="Coordinated ceiling services" />
           </div>
         </div>
       </div>
     </section>
 
-    <!-- 2 · foundation · cream -->
+    <!-- 2 · foundation · cream · CODES -->
     <section class="cs cs--L theme-cream" aria-labelledby="s2-h">
       <div class="wrap cs__in">
         <div class="cs__card s2">
           <h2 id="s2-h" data-split>Built on code from the first sketch.</h2>
-          <p class="lede">We design to the codes each authority enforces and prepare the submissions ourselves, so a drawing is written for its reviewer before it's sent.</p>
-          <ul class="chips" aria-label="Codes and authorities we work to">
-            {codes.map((c) => <li>{c}</li>)}
+          <p class="lede">We design to the codes each authority enforces and prepare submissions ourselves, so drawings are written for their reviewer before they are sent.</p>
+          <ul class="chips" aria-label="Codes and standards we work to">
+            {codesWeUse.map((c) => <li>{c}</li>)}
           </ul>
           <ImageSlot id="home-codes" ratio="16 / 7" alt="Marked-up fire and life safety drawing with red review notes" label="Authority-marked drawing set, red notes" />
         </div>
       </div>
     </section>
 
-    <!-- 3 · construction · deep navy -->
+    <!-- 3 · construction · deep navy · ESTIMATION -->
     <section class="cs cs--R" aria-labelledby="s3-h">
       <div class="wrap cs__in">
         <div class="cs__card s3">
-          <h2 id="s3-h" data-split>Offices in Dubai, India and Saudi Arabia.</h2>
-          <p class="lede">Gulf projects are often designed in one country and built in another, by teams that never meet. Ours share one standard: design teams in India, delivery in the Gulf, and the same drawings, codes and people across all three offices.</p>
+          <h2 id="s3-h" data-split>Quantities and costs you can tender on.</h2>
+          <div class="s1__row">
+            <div class="stack">
+              <p class="body">{est.lede}</p>
+              <ul class="register">
+                {estRows.map(([t, n]) => <li><span class="register__name">{t}</span><span class="register__note">{n}</span></li>)}
+              </ul>
+              <a class="link" href={u(`/services/${est.slug}`)}>Estimation and project management <Arrow /></a>
+            </div>
+            <ImageSlot id="svc-review" ratio="4 / 5" alt="A printed MEP drawing compared against a model on a tablet" label="Drawing checked against the model" />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4 · plumbing · navy-900 · PLUMBING -->
+    <section class="cs cs--L cs--wide" aria-labelledby="s4-h">
+      <div class="wrap cs__in">
+        <div class="cs__card s4">
+          <div class="s4__copy">
+            <h2 id="s4-h" class="s4__h" data-split>Plumbing engineering, from fixture units to pump sets.</h2>
+            <p class="lede">{plumbing.lede}</p>
+            <ul class="ticks ticks--row">{plumbing.highlights.map((h) => <li>{h}</li>)}</ul>
+            <a class="link" href={u(`/services/${plumbing.slug}`)}>Plumbing engineering scope <Arrow /></a>
+          </div>
+          <ImageSlot id="svc-plumbing-detail" ratio="4 / 5" alt="Close-up of a plumbing riser diagram" label="Plumbing riser diagram, close-up" />
+        </div>
+      </div>
+    </section>
+
+    <!-- 5 · airflow · light cream · HVAC -->
+    <section class="cs cs--L theme-cream" aria-labelledby="s5-h">
+      <div class="wrap cs__in">
+        <div class="cs__card s5">
+          <h2 id="s5-h" data-split>HVAC engineering for 46°C summers.</h2>
+          <div class="s5__row">
+            <ImageSlot id="svc-hvac-detail" ratio="4 / 5" alt="Close-up of an HVAC duct layout drawing with a scale rule" label="HVAC duct layout, close-up" />
+            <div class="stack">
+              <p class="body">{hvac.lede}</p>
+              <ul class="sys" aria-label="HVAC systems we design">{hvacSystems.map((x) => <li>{x}</li>)}</ul>
+              <a class="link" href={u(`/services/${hvac.slug}`)}>HVAC engineering scope <Arrow /></a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6 · electrical · near-black · PROCESS -->
+    <section class="cs cs--R cs--full" aria-labelledby="s6-h">
+      <div class="wrap cs__in">
+        <div class="cs__card s6">
+          <h2 id="s6-h" class="s6__h" data-split>How a project moves through our office.</h2>
+          <ol class="proc">
+            {projectProcess.map(([t, d], i) => (
+              <li><span class="proc__n dot">{String(i + 1).padStart(2, '0')}</span><span class="proc__t">{t}</span><span class="proc__d">{d}</span></li>
+            ))}
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7 · solar · navy · OFFICES -->
+    <section class="cs cs--L" aria-labelledby="s7-h">
+      <div class="wrap cs__in">
+        <div class="cs__card s7">
+          <h2 id="s7-h" data-split>Headquartered in Dubai, working across the GCC.</h2>
+          <p class="lede">Projects across the GCC are often designed in one country and built in another. Our teams in Dubai and India work to one standard, with the same drawings, codes and checklists for every client, wherever the site is.</p>
+          <ul class="chips serves" aria-label="Countries we serve">{servesShort.map((c) => <li>{c}</li>)}</ul>
           <ul class="offices">
             {offices.map((o) => (
               <li>
-                <ImageSlot id={o.img} ratio="3 / 4" alt={`Mechbridge ${o.city}`} label={`${o.city}: city or office`} />
+                <ImageSlot id={o.img} ratio="3 / 4" alt={`${o.city}: city view`} label={`${o.city}: city or office building`} />
                 <p class="offices__role mono">{o.role}</p>
                 <p class="offices__city">{o.city}</p>
               </li>
@@ -135,120 +207,54 @@ const clayMobile = Array.from({ length: 10 }, (_, i) => ({ x: i % 2 ? 0.26 : 0.7
       </div>
     </section>
 
-    <!-- 4 · plumbing · navy-900 · TRAINING OPENER -->
-    <section class="cs cs--L cs--train" id="training" aria-labelledby="s4-h">
-      <div class="wrap cs__in">
-        <div class="cs__card s4">
-          <div class="s4__copy">
-            <h2 id="s4-h" class="s4__h" data-split>Learn MEP from the engineers who design it.</h2>
-            <p class="lede">Mechbridge MEP Consultants trains engineers for the work we hire for. Your instructors spend their week on live projects in Dubai and Saudi Arabia, and they teach from those drawings.</p>
-            <div class="btn-row">
-              <a class="btn" href={u('/training#enquire')}>Enquire about the next cohort <Arrow /></a>
-              <a class="btn btn--ghost" href={u('/training')}>See how training works</a>
-            </div>
-          </div>
-          <FlutedGlass class="s4__art" ratio="4 / 5" left="MEP Consultants" right="Training" />
-        </div>
-      </div>
-    </section>
-
-    <!-- 5 · airflow · light cream · USP -->
-    <section class="cs cs--L theme-cream" aria-labelledby="s5-h">
-      <div class="wrap cs__in">
-        <div class="cs__card s5">
-          <h2 id="s5-h" data-split>Not a classroom. A project office.</h2>
-          <div class="s5__row">
-            <ImageSlot id="training-markup" ratio="4 / 5" alt="Senior engineer marking up a trainee's HVAC layout in red pen" label="Senior engineer marking up a trainee's layout" />
-            <table class="compare">
-              <caption class="sr-only">How Mechbridge training compares with a typical course</caption>
-              <thead><tr><th scope="col"><span class="sr-only">Topic</span></th><th scope="col">Typical course</th><th scope="col">Mechbridge</th></tr></thead>
-              <tbody>
-                {compare.map(([k, a, b]) => <tr><th scope="row">{k}</th><td>{a}</td><td>{b}</td></tr>)}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- 6 · electrical · near-black · TRACKS -->
-    <section class="cs cs--R" aria-labelledby="s6-h">
-      <div class="wrap cs__in">
-        <div class="cs__card s6">
-          <h2 id="s6-h" class="s6__h" data-split>Pick the building system you want to specialise in.</h2>
-          <ul class="tracks">
-            {tracks.map((t) => (
-              <li>
-                <a class="track" href={u(`/training/${t.slug}`)}>
-                  <ImageSlot id={t.img} ratio="2 / 1" alt={`${t.title} training`} label={t.title} />
-                  <span class="track__ref mono">{t.code}</span>
-                  <span class="track__title">{t.title}</span>
-                  <span class="track__short">{t.short}</span>
-                  <span class="track__go" aria-hidden="true"><Arrow dir="up-right" /></span>
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
-    </section>
-
-    <!-- 7 · solar · navy · HOW IT RUNS -->
-    <section class="cs cs--L" aria-labelledby="s7-h">
-      <div class="wrap cs__in">
-        <div class="cs__card s7">
-          <h2 id="s7-h" data-split>How a cohort runs.</h2>
-          <div class="s7__row">
-            <ol class="steps">
-              {steps.map(([t, d], i) => (
-                <li><span class="steps__n dot">{String(i + 1).padStart(2, '0')}</span><span class="steps__t">{t}</span><span class="steps__d">{d}</span></li>
-              ))}
-            </ol>
-            <ImageSlot id="training-cohort" ratio="4 / 5" alt="Trainees working on drawings at a shared table with an instructor" label="Cohort at work with an instructor" />
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- 8 · inspection · cream · FIRE -->
+    <!-- 8 · inspection · cream · FIREFIGHTING -->
     <section class="cs cs--L theme-cream" aria-labelledby="s8-h">
       <div class="wrap cs__in">
         <div class="cs__card s8">
           <div class="s8__copy stack">
-            <h2 id="s8-h" data-split>Fire and life safety, from first layout to final inspection.</h2>
-            <p class="lede">A building can't open until Civil Defence signs it off. We design the systems that get it there and stay through testing and commissioning.</p>
+            <h2 id="s8-h" data-split>Firefighting engineering, through to Civil Defence approval.</h2>
+            <p class="lede">{fire.lede}</p>
             <ul class="ticks">
-              <li>Sprinklers, hydrants, fire pumps and clean-agent suppression</li>
-              <li>Fire alarm, voice evacuation and cause-and-effect matrices</li>
-              <li>Smoke management and stair pressurisation</li>
-              <li>Life safety and means of egress strategies</li>
-              <li>Inspection, testing and commissioning support</li>
+              <li>Sprinklers, hose reels, hydrants and fire pump rooms</li>
+              <li>Clean agent and kitchen hood suppression</li>
+              <li>Hydraulic calculations and fire water tank sizing</li>
+              <li>Firefighting shop drawings and code compliance</li>
             </ul>
-            <a class="link" href={u('/services#fire')}>Fire and life safety services <Arrow /></a>
+            <a class="link" href={u(`/services/${fire.slug}`)}>Firefighting engineering scope <Arrow /></a>
           </div>
           <ImageSlot id="home-fire" ratio="4 / 3" alt="Red sprinkler mains and valve set in a plant room" label="Sprinkler valve set, plant room" />
         </div>
       </div>
     </section>
 
-    <!-- 9 · happy · navy · CLOSE -->
+    <!-- 9 · happy · navy · CLOSE: proposal, training, internships, careers -->
     <section class="cs cs--R" aria-labelledby="s9-h">
       <div class="wrap cs__in">
         <div class="cs__card s9">
-          <h2 id="s9-h" data-split>Bring us a project, or come and train with us.</h2>
+          <h2 id="s9-h" data-split>Work with us, train with us, or join us.</h2>
           <div class="s9__row">
-            <a class="close glass" href={u('/training#enquire')}>
-              <span class="close__t">Train with us</span>
-              <span class="close__d">Six tracks taught by engineers on live Gulf projects. Cohorts in Dubai, Saudi Arabia and online.</span>
-              <span class="btn">Enquire about training <Arrow /></span>
+            <a class="close glass close--main" href={u('/contact?topic=consultancy')}>
+              <span class="close__t">Request a proposal</span>
+              <span class="close__d">Send the project, its stage and the services you need. An engineer replies with scope, programme and fee.</span>
+              <span class="btn">Start a proposal <Arrow /></span>
             </a>
-            <a class="close glass" href={u('/contact')}>
-              <span class="close__t">Build with us</span>
-              <span class="close__d">MEP, fire and life safety design and approvals for projects in the UAE, KSA and India.</span>
-              <span class="btn btn--ghost">Start a project conversation <Arrow /></span>
+            <a class="close glass" href={u('/training')}>
+              <span class="close__t">Professional training</span>
+              <span class="close__d">One course: HVAC, firefighting, plumbing, AutoCAD and Revit MEP, taught by our engineers.</span>
+              <span class="link">About the course <Arrow /></span>
+            </a>
+            <a class="close glass" href={u('/internships')}>
+              <span class="close__t">GCC-ready internship</span>
+              <span class="close__d">For students and fresh graduates: the full course plus supervised project work and a portfolio.</span>
+              <span class="link">The internship package <Arrow /></span>
+            </a>
+            <a class="close glass" href={u('/careers')}>
+              <span class="close__t">Careers</span>
+              <span class="close__d">Open roles for MEP engineers, draughtspeople and quantity surveyors across the GCC and India.</span>
+              <span class="link">See open roles <Arrow /></span>
             </a>
           </div>
-          <p class="body s9__mail">Write to <a class="link" href={`mailto:${site.connect}`}>{site.connect}</a> · Existing clients: <a class="link" href={`mailto:${site.support}`}>{site.support}</a></p>
+          <p class="body s9__mail">Holding a Mechbridge certificate? <a class="link" href={u('/verify')}>Verify it here</a> · Existing clients: <a class="link" href={`mailto:${site.support}`}>{site.support}</a></p>
         </div>
       </div>
     </section>
@@ -269,30 +275,39 @@ const clayMobile = Array.from({ length: 10 }, (_, i) => ({ x: i % 2 ? 0.26 : 0.7
   :global(#smooth-wrapper) { position: relative; z-index: 2; }
 
   /* ---------- hero ---------- */
-  .hero { position: relative; min-height: 100svh; background: #06080c; overflow: hidden; display: flex; align-items: flex-end; color: var(--cream-300); }
+  .hero { position: relative; min-height: 100svh; background: #05070b; overflow: hidden; display: flex; align-items: flex-end; color: var(--cream-300); }
   .hero__media { position: absolute; inset: 0; }
-  .hero__media img { width: 100%; height: 100%; object-fit: cover; object-position: 62% 55%; }
-  .hero__shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgb(6 8 12 / .55) 0%, rgb(6 8 12 / 0) 26%, rgb(6 8 12 / 0) 52%, rgb(6 8 12 / .82) 100%); }
-  .hero__inner { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 48px; align-items: end; padding-block: calc(var(--nav-h) + 48px) clamp(56px, 8vh, 96px); }
+  .hero__media img { width: 100%; height: 100%; object-fit: cover; object-position: 70% 50%; }
+  /* Left-side vignette so the headline reads over the photo: a soft blur that fades out to the right, then a dark wash. */
+  .hero__blur {
+    position: absolute; inset: 0;
+    -webkit-backdrop-filter: blur(7px); backdrop-filter: blur(7px);
+    -webkit-mask-image: linear-gradient(90deg, #000 0%, #000 22%, transparent 58%);
+    mask-image: linear-gradient(90deg, #000 0%, #000 22%, transparent 58%);
+  }
+  .hero__shade { position: absolute; inset: 0; background:
+    radial-gradient(ellipse 70% 85% at 0% 85%, rgb(3 4 7 / .82) 0%, rgb(3 4 7 / .55) 40%, rgb(3 4 7 / 0) 75%),
+    linear-gradient(90deg, rgb(3 4 7 / .78) 0%, rgb(3 4 7 / .5) 32%, rgb(3 4 7 / 0) 62%),
+    linear-gradient(180deg, rgb(5 7 11 / .5) 0%, rgb(5 7 11 / 0) 24%, rgb(5 7 11 / 0) 44%, rgb(5 7 11 / .86) 100%); }
+  .hero__inner { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 48px; align-items: end; padding-block: calc(var(--nav-h) + 48px) clamp(56px, 8vh, 96px); }
   .hero__copy { display: grid; gap: 28px; max-width: 980px; }
-  .hero h1 { color: var(--cream-300); font-size: clamp(3.1rem, 7.6vw, 7.6rem); max-width: 13ch; }
-  .hero .lede { color: var(--cream-200); max-width: 50ch; }
+  .hero h1 { color: var(--cream-300); font-size: clamp(3rem, 7vw, 7rem); max-width: 14ch; }
+  .hero .lede { color: var(--cream-200); max-width: 54ch; }
   .hero__block { padding: 4px 0; }
   .hero__block :global(.tblock__row) { border-top-color: rgb(240 225 206 / .14); }
   .hero__block :global(.tblock__k) { color: var(--navy-100); }
-  .hero__live { color: var(--red-200); text-decoration: none; text-transform: uppercase; font-size: .875rem; justify-self: end; }
-  .hero__live:hover { color: var(--cream-300); }
   .hero__cue { position: absolute; right: var(--gutter); bottom: 22px; display: inline-flex; align-items: center; gap: 8px; color: var(--cream-300); text-decoration: none; font-size: .8125rem; text-transform: uppercase; min-height: 44px; opacity: .8; }
-  .hero__cue svg { width: 16px; animation: cue 2.4s var(--ease) infinite; }
+  .hero__cue :global(svg) { width: 16px; animation: cue 2.4s var(--ease) infinite; }
   @keyframes cue { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(5px); } }
   @media (max-width: 1099px) { .hero__inner { grid-template-columns: 1fr; } .hero__block { max-width: 420px; } .hero__cue { display: none; } }
   @media (max-width: 767px) {
     .hero { align-items: stretch; }
-    .hero__media { inset: 0 0 auto; height: 60svh; -webkit-mask-image: linear-gradient(#000 62%, transparent); mask-image: linear-gradient(#000 62%, transparent); }
-    .hero__media img { object-position: 77% 58%; }
-    .hero__shade { background: linear-gradient(180deg, rgb(6 8 12 / .5) 0%, rgb(6 8 12 / 0) 22%); }
-    .hero__inner { align-content: end; padding-top: 46svh; padding-bottom: 40px; gap: 28px; }
-    .hero h1 { font-size: clamp(2.6rem, 12.5vw, 4rem); }
+    .hero__media { inset: 0 0 auto; height: 58svh; -webkit-mask-image: linear-gradient(#000 62%, transparent); mask-image: linear-gradient(#000 62%, transparent); }
+    .hero__media img { object-position: 74% 50%; }
+    .hero__shade { background: linear-gradient(180deg, rgb(5 7 11 / .5) 0%, rgb(5 7 11 / 0) 22%); }
+    .hero__blur { display: none; }
+    .hero__inner { align-content: end; padding-top: 44svh; padding-bottom: 40px; gap: 28px; }
+    .hero h1 { font-size: clamp(2.4rem, 11vw, 3.8rem); }
     .hero__copy { gap: 20px; }
     .hero__block { display: none; }
   }
@@ -304,105 +319,92 @@ const clayMobile = Array.from({ length: 10 }, (_, i) => ({ x: i % 2 ? 0.26 : 0.7
   .cs__card { display: grid; gap: clamp(24px, 2.6vw, 36px); }
   .cs--L .cs__card { width: min(100%, 64%); }
   .cs--R .cs__card { width: min(100%, 66%); margin-left: auto; }
+  .cs--wide .cs__card { width: min(100%, 76%); }
+  .cs--full .cs__card { width: 100%; }
   .cs h2 { font-size: clamp(2.3rem, 4.6vw, 4.6rem); }
 
-  .s0__row { display: grid; grid-template-columns: 1.35fr 1fr; gap: 24px; align-items: end; }
-  .s0__tb { border-color: rgb(240 225 206 / .2); }
+  .index { list-style: none; margin: 0; padding: 0; border-top: var(--hair); }
+  .index a { display: grid; grid-template-columns: 48px minmax(0, 1fr) auto; grid-template-areas: "ref t go" "ref h go"; column-gap: 12px; align-items: center; padding: 14px 4px; border-bottom: var(--hair); color: var(--cream-300); text-decoration: none; transition: background-color .2s var(--ease), padding .3s var(--ease); }
+  .index a:hover { background: rgb(240 225 206 / .05); padding-left: 10px; }
+  .index__ref { grid-area: ref; color: var(--red-300); }
+  .index__t { grid-area: t; font-family: var(--f-display); font-variation-settings: "wdth" 80, "opsz" 32; font-weight: 700; font-size: 1.3rem; line-height: 1.1; }
+  .index__h { grid-area: h; color: var(--navy-100); font-size: var(--t-small); }
+  .index a :global(svg) { grid-area: go; width: 18px; color: var(--red-300); transition: transform .25s var(--ease); }
+  .index a:hover :global(svg) { transform: translateX(3px); }
 
   .s1__row { display: grid; grid-template-columns: 1.3fr 1fr; gap: 32px; align-items: start; }
   .register { list-style: none; margin: 0; padding: 0; border-top: var(--hair); }
-  .register li { display: grid; grid-template-columns: 56px 1fr; column-gap: 12px; padding: 14px 0; border-bottom: var(--hair); }
-  .register__ref { color: var(--red-300); grid-row: span 2; padding-top: 3px; }
+  .register li { display: grid; gap: 2px; padding: 14px 0; border-bottom: var(--hair); }
   .register__name { font-weight: 600; }
   .register__note { color: var(--color-text-muted); font-size: var(--t-small); }
 
   .s2 .chips li { border-color: rgb(26 40 65 / .25); background: rgb(251 248 243 / .4); }
 
-  .offices { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-  .offices__role { margin-top: 14px; color: var(--color-text-muted); text-transform: uppercase; font-size: var(--t-micro); letter-spacing: .08em; }
-  .offices__city { font-family: var(--f-display); font-variation-settings: "wdth" 80, "opsz" 48; font-weight: 700; font-size: 1.6rem; line-height: 1.1; }
-
-  .cs--train .cs__card { width: min(100%, 78%); }
-  .s4 { grid-template-columns: 1.25fr .75fr; align-items: center; gap: clamp(32px, 4vw, 64px); }
-  .s4__copy { display: grid; gap: 28px; }
-  .s4__h { font-size: clamp(2.8rem, 6vw, 6.2rem) !important; }
-
-  .s5__row { display: grid; grid-template-columns: .8fr 1.2fr; gap: 32px; align-items: start; }
-  .compare { width: 100%; border-collapse: collapse; font-size: .9688rem; }
-  .compare th, .compare td { text-align: left; vertical-align: top; padding: 14px 12px 14px 0; border-bottom: 1px solid rgb(26 40 65 / .18); }
-  .compare thead th { font-family: var(--f-mono); font-size: var(--t-micro); font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--navy-400); padding-top: 0; }
-  .compare thead th:last-child { color: var(--red-500); }
-  .compare tbody th { font-weight: 600; width: 26%; }
-  .compare td:nth-child(2) { color: var(--navy-400); width: 32%; }
-  .compare td:last-child { font-weight: 600; color: var(--navy-800); }
-
-  .cs:has(.s6) .cs__card { width: 100%; }
-  .s6__h { max-width: 15ch; margin-left: auto; width: min(100%, 64%); }
-  .tracks { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
-  .track {
-    position: relative; display: grid; gap: 6px; height: 100%; padding: 10px 10px 20px; text-decoration: none; color: var(--cream-300);
-    background: rgb(19 30 50 / .72); border: 1px solid var(--navy-500); border-radius: 10px;
-    transition: transform .3s var(--ease), border-color .3s var(--ease), background-color .3s var(--ease);
-  }
-  .track:hover { transform: translateY(-2px); border-color: var(--red-400); background: rgb(31 47 76 / .85); }
-  .track :global(.slot) { margin-bottom: 10px; }
-  .track__ref { color: var(--red-300); padding-inline: 6px; font-size: var(--t-micro); }
-  .track__title { font-family: var(--f-display); font-variation-settings: "wdth" 80, "opsz" 32; font-weight: 700; font-size: 1.4rem; line-height: 1.05; padding-inline: 6px; }
-  .track__short { color: var(--navy-100); font-size: var(--t-small); padding-inline: 6px; max-width: 36ch; }
-  .track__go { position: absolute; right: 18px; bottom: 18px; width: 20px; color: var(--red-300); transition: transform .3s var(--ease); }
-  .track:hover .track__go { transform: translate(2px, -2px); }
-
-  .s7__row { display: grid; grid-template-columns: 1.4fr .8fr; gap: 32px; align-items: end; }
-  .steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 0 28px; }
-  .steps li { display: grid; grid-template-columns: 44px 1fr; column-gap: 8px; padding: 18px 0; border-top: var(--hair); }
-  .steps__n { color: var(--red-300); grid-row: span 2; font-size: 1.1rem; }
-  .steps__t { font-weight: 600; }
-  .steps__d { color: var(--color-text-muted); font-size: var(--t-small); }
-
-  .cs:has(.s8) .cs__card { width: min(100%, 70%); }
-  .s8 { grid-template-columns: 1.1fr .9fr; align-items: start; }
+  .s4 { grid-template-columns: 1.3fr .7fr; align-items: center; gap: clamp(32px, 4vw, 64px); }
+  .s4__copy { display: grid; gap: 24px; }
+  .s4__h { font-size: clamp(2.6rem, 5.2vw, 5.4rem) !important; }
   .ticks { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
   .ticks li { position: relative; padding-left: 26px; }
   .ticks li::before { content: ""; position: absolute; left: 2px; top: .62em; width: 12px; height: 2px; background: var(--red-500); }
+  .ticks--row { display: flex; flex-wrap: wrap; gap: 10px 28px; font-weight: 600; }
+
+  .s5__row { display: grid; grid-template-columns: .8fr 1.2fr; gap: 32px; align-items: start; }
+  .sys { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid rgb(26 40 65 / .18); }
+  .sys li { padding: 12px 0; border-bottom: 1px solid rgb(26 40 65 / .18); font-weight: 600; }
+
+  .s6__h { max-width: 16ch; margin-left: auto; width: min(100%, 64%); }
+  .proc { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  .proc li { display: grid; gap: 8px; align-content: start; padding: 22px; border-radius: 12px; background: rgb(19 30 50 / .72); border: 1px solid var(--navy-500); }
+  .proc__n { color: var(--red-300); font-size: 1.3rem; }
+  .proc__t { font-family: var(--f-display); font-variation-settings: "wdth" 80, "opsz" 32; font-weight: 700; font-size: 1.4rem; line-height: 1.1; }
+  .proc__d { color: var(--navy-100); font-size: var(--t-small); }
+
+  .offices { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; max-width: 640px; }
+  .serves li { border-color: rgb(240 225 206 / .28); }
+  .offices__role { margin-top: 14px; color: var(--color-text-muted); text-transform: uppercase; font-size: var(--t-micro); letter-spacing: .08em; }
+  .offices__city { font-family: var(--f-display); font-variation-settings: "wdth" 80, "opsz" 48; font-weight: 700; font-size: 1.6rem; line-height: 1.1; }
+
+  .cs:has(.s8) .cs__card { width: min(100%, 72%); }
+  .s8 { grid-template-columns: 1.1fr .9fr; align-items: start; }
 
   .s9__row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-  .close { display: grid; gap: 14px; align-content: start; padding: 28px; text-decoration: none; color: var(--cream-300); transition: transform .3s var(--ease), border-color .3s; }
+  .close { display: grid; gap: 12px; align-content: start; padding: 26px; text-decoration: none; color: var(--cream-300); transition: transform .3s var(--ease), border-color .3s; }
   .close:hover { transform: translateY(-2px); border-color: rgb(240 225 206 / .4); }
-  .close__t { font-family: var(--f-display); font-variation-settings: "wdth" 75, "opsz" 96; font-weight: 760; font-size: clamp(2rem, 3vw, 2.8rem); line-height: 1; }
+  .close__t { font-family: var(--f-display); font-variation-settings: "wdth" 75, "opsz" 96; font-weight: 760; font-size: clamp(1.8rem, 2.6vw, 2.5rem); line-height: 1; }
   .close__d { color: var(--navy-100); }
-  .close .btn { justify-self: start; margin-top: 8px; }
+  .close .btn, .close .link { justify-self: start; margin-top: 4px; }
+  .close--main { border-color: rgb(208 60 70 / .55); }
   .s9__mail { font-size: var(--t-small); }
   .s9__mail .link { min-height: 0; }
 
-  /* tablets: content takes the full width, pieces stay on the edge band */
+  /* phones and tablets: pieces live in a band at the top of each section, content sits on glass below it */
   @media (max-width: 1099px) {
-    .cs--L .cs__card, .cs--R .cs__card, .cs--train .cs__card, .cs:has(.s8) .cs__card { width: min(100%, 78%); }
-    .s4, .s8 { grid-template-columns: 1fr; }
-    .s4__art { max-width: 360px; }
-    .tracks { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  }
-
-  /* phones: pieces live in a band at the top of each section, content sits on glass below it */
-  @media (max-width: 767px) {
     .cs { align-items: flex-start; }
-    .cs__in { padding-block: 236px 48px; }
-    .cs--L .cs__card, .cs--R .cs__card, .cs--train .cs__card, .cs:has(.s6) .cs__card, .cs:has(.s8) .cs__card { width: 100%; margin: 0; }
+    .cs__in { padding-block: 244px 56px; }
+    .cs--L .cs__card, .cs--R .cs__card, .cs--wide .cs__card, .cs--full .cs__card, .cs:has(.s8) .cs__card { width: 100%; margin: 0; }
     .cs__card {
-      padding: 24px 18px; border-radius: 14px;
-      background: color-mix(in srgb, var(--navy-800) 50%, transparent);
+      padding: clamp(22px, 4vw, 40px) clamp(18px, 4vw, 40px); border-radius: 16px;
+      background: color-mix(in srgb, var(--navy-800) 55%, transparent);
       -webkit-backdrop-filter: blur(18px) saturate(140%); backdrop-filter: blur(18px) saturate(140%);
       border: 1px solid rgb(240 225 206 / .14);
     }
-    .theme-cream .cs__card { background: color-mix(in srgb, var(--cream-100) 62%, transparent); border-color: rgb(26 40 65 / .14); }
-    .cs h2, .s4__h { font-size: clamp(2.1rem, 10vw, 2.9rem) !important; }
-    .s6__h { width: 100%; }
-    .s0__row, .s1__row, .s5__row, .s7__row, .s9__row { grid-template-columns: 1fr; }
-    .offices { grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
-    .offices__city { font-size: 1.1rem; }
-    .tracks { grid-template-columns: 1fr; gap: 12px; }
-    .steps { grid-template-columns: 1fr; }
-    .s4__art { max-width: none; --ar: 16 / 10 !important; }
-    .compare { font-size: .875rem; }
-    .compare thead th:first-child, .compare tbody th { display: none; }
+    .theme-cream .cs__card { background: color-mix(in srgb, var(--cream-100) 66%, transparent); border-color: rgb(26 40 65 / .14); }
+    .s6__h { width: 100%; margin-left: 0; }
+    .s4, .s8 { grid-template-columns: 1fr; }
+    .s4 :global(.slot), .s8 :global(.slot) { --ar: 16 / 9 !important; }
+    .proc { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+
+  /* phones */
+  @media (max-width: 767px) {
+    .cs__in { padding-block: 232px 48px; }
+    .cs h2, .s4__h { font-size: clamp(2rem, 9.5vw, 2.8rem) !important; }
+    .s1__row, .s5__row, .s9__row { grid-template-columns: 1fr; }
+    .s1__row :global(.slot), .s5__row :global(.slot) { --ar: 16 / 10 !important; }
+    .offices { grid-template-columns: 1fr 1fr; gap: 12px; }
+    .offices__city { font-size: 1.05rem; }
+    .proc { grid-template-columns: 1fr; }
+    .index__h { display: none; }
+    .sys { grid-template-columns: 1fr; }
   }
 </style>
