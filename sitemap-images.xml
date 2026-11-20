@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+  <url>
+    <loc>https://mechbridgegroup.com/</loc>
+    <image:image><image:loc>https://mechbridgegroup.com/images/hero-home.webp</image:loc><image:title>Mechbridge International MEP Consultants</image:title></image:image>
+    <image:image><image:loc>https://mechbridgegroup.com/images/home-codes.webp</image:loc><image:title>Authority-marked MEP drawing set</image:title></image:image>
+    <image:image><image:loc>https://mechbridgegroup.com/images/home-fire.webp</image:loc><image:title>Sprinkler valve set in a plant room</image:title></image:image>
+    <image:image><image:loc>https://mechbridgegroup.com/images/svc-mep.webp</image:loc><image:title>Coordinated MEP services in a ceiling void</image:title></image:image>
+  </url>
+  <url>
+    <loc>https://mechbridgegroup.com/services</loc>
+    <image:image><image:loc>https://mechbridgegroup.com/images/services-hero.webp</image:loc><image:title>Plant room with chillers, pumps and fire mains</image:title></image:image>
+    <image:image><image:loc>https://mechbridgegroup.com/images/svc-hvac.webp</image:loc><image:title>HVAC Engineering</image:title></image:image>
+    <image:image><image:loc>https://mechbridgegroup.com/images/svc-fire.webp</image:loc><image:title>Firefighting Engineering</image:title></image:image>
+    <image:image><image:loc>https://mechbridgegroup.com/images/svc-plumbing.webp</image:loc><image:title>Plumbing Engineering</image:title></image:image>
+    <image:image><image:loc>https://mechbridgegroup.com/images/svc-design.webp</image:loc><image:title>MEP Design</image:title></image:image>
+    <image:image><image:loc>https://mechbridgegroup.com/images/svc-estimation.webp</image:loc><image:title>MEP Estimation and Project Management</image:title></image:image>
+  </url>
+  <url>
+    <loc>https://mechbridgegroup.com/services/hvac-engineering</loc>
+    <image:image><image:loc>https://mechbridgegroup.com/images/svc-hvac-wide.webp</image:loc><image:title>HVAC Engineering</image:title></image:image>
+    <image:image><image:loc>https://mechbridgegroup.com/images/svc-hvac-detail.webp</image:loc><image:title>HVAC Engineering drawings</image:title></image:image>
+  </url>
+  <url>
+    <loc>https://mechbridgegroup.com/services/firefighting-engineering</loc>
+    <image:image><image:loc>https://mechbridgegroup.com/images/svc-fire-wide.webp</image:loc><image:title>Firefighting Engineering</image:title></image:image>
+    <image:image><image:loc>https://mechbridgegroup.com/images/svc-fire-detail.webp</image:loc><image:title>Firefighting Engineering drawings</image:title></image:image>
+  </url>
+  <url>
+    <loc>https://mechbridgegroup.com/services/plumbing-engineering</loc>
+    <image:image><image:loc>https://mechbridgegroup.com/images/svc-plumbing-wide.webp</image:loc><image:title>Plumbing Engineering</image:title></image:image>
+    <image:image><image:loc>https://mechbridgegroup.com/images/svc-plumbing-detail.webp</image:loc><image:title>Plumbing Engineering drawings</image:title></image:image>
+  </url>
+  <url>
+    <loc>https://mechbridgegroup.com/services/mep-design</loc>
+    <image:image><image:loc>https://mechbridgegroup.com/images/svc-design-wide.webp</image:loc><image:title>MEP Design</image:title></image:image>
+    <image:image><image:loc>https://mechbridgegroup.com/images/svc-design-detail.webp</image:loc><image:title>MEP Design drawings</image:title></image:image>
+  </url>
+  <url>
+    <loc>https://mechbridgegroup.com/services/mep-estimation-project-management</loc>
+    <image:image><image:loc>https://mechbridgegroup.com/images/svc-estimation-wide.webp</image:loc><image:title>MEP Estimation and Project Management</image:title></image:image>
+    <image:image><image:loc>https://mechbridgegroup.com/images/svc-estimation-detail.webp</image:loc><image:title>MEP Estimation and Project Management drawings</image:title></image:image>
+  </url>
+  <url>
+    <loc>https://mechbridgegroup.com/training</loc>
+    <image:image><image:loc>https://mechbridgegroup.com/images/training-hero.webp</image:loc><image:title>Professional MEP Engineering Training</image:title></image:image>
+    <image:image><image:loc>https://mechbridgegroup.com/images/training-site.webp</image:loc><image:title>MEP site inspection</image:title></image:image>
+    <image:image><image:loc>https://mechbridgegroup.com/images/work-model.webp</image:loc><image:title>Revit MEP plant room model</image:title></image:image>
+  </url>
+  <url>
+    <loc>https://mechbridgegroup.com/internships</loc>
+    <image:image><image:loc>https://mechbridgegroup.com/images/training-cohort.webp</image:loc><image:title>GCC-Ready Internship Package</image:title></image:image>
+    <image:image><image:loc>https://mechbridgegroup.com/images/work-site.webp</image:loc><image:title>Site visit, exposed ductwork</image:title></image:image>
+  </url>
+  <url>
+    <loc>https://mechbridgegroup.com/careers</loc>
+    <image:image><image:loc>https://mechbridgegroup.com/images/careers-hero.webp</image:loc><image:title>MEP drawing review</image:title></image:image>
+  </url>
+  <url>
+    <loc>https://mechbridgegroup.com/about</loc>
+    <image:image><image:loc>https://mechbridgegroup.com/images/about-hero.webp</image:loc><image:title>Dubai skyline</image:title></image:image>
+    <image:image><image:loc>https://mechbridgegroup.com/images/about-story-2.webp</image:loc><image:title>Rooftop plant deck</image:title></image:image>
+  </url>
+  <url>
+    <loc>https://mechbridgegroup.com/contact</loc>
+    <image:image><image:loc>https://mechbridgegroup.com/images/office-dubai-contact.webp</image:loc><image:title>Dubai</image:title></image:image>
+    <image:image><image:loc>https://mechbridgegroup.com/images/office-india-contact.webp</image:loc><image:title>India</image:title></image:image>
+  </url>
+</urlset>
