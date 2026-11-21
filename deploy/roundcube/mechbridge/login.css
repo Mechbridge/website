@@ -1,84 +1,125 @@
-/* Mechbridge sign-in screen for Roundcube (Elastic skin). Loaded by the mechbridge plugin on the login page only. */
-html, body.task-login {
-  background: #0D1523 radial-gradient(1200px 600px at 15% -10%, rgba(177, 23, 34, .18), transparent 60%), radial-gradient(900px 600px at 110% 110%, rgba(240, 225, 206, .07), transparent 60%) !important;
-  color: #F0E1CE;
-  min-height: 100%;
+/* Mechbridge sign-in screen for Roundcube (Elastic skin). Loaded by the mechbridge plugin on the login page only.
+ *
+ * Elastic's script rebuilds the login table after load: each <tr> gets "form-group row", the label cell
+ * (td.title) is hidden with an inline style, and the input cell becomes the icon group itself:
+ *   <td class="input input-group input-group-lg"><span class="input-group-prepend"><i class="input-group-text icon user"></i></span><input class="form-control"></td>
+ * The button gets "btn-lg text-uppercase w-100". Elastic also pushes #logo and #login-form down with
+ * position:relative + top:16vh/20vh and locks the page with overflow:hidden; both are undone here.
+ */
+:root { --mb-navy-950: #0D1523; --mb-navy: #1A2841; --mb-line: #34466A; --mb-line-strong: #4A5E85; --mb-cream: #F0E1CE; --mb-paper: #FBF8F3; --mb-muted: #B8C1D3; --mb-faint: #8E9AB2; --mb-red: #B11722; --mb-red-dark: #8E121B; --mb-red-300: #E8868D; }
+
+/* Page: navy, scrollable, content centred. The colour goes last in a multi-layer background. */
+html, html body.task-login {
+  background: radial-gradient(1100px 560px at 12% -8%, rgba(177, 23, 34, .20), transparent 62%),
+              radial-gradient(900px 600px at 108% 108%, rgba(240, 225, 206, .08), transparent 60%),
+              var(--mb-navy-950) !important;
+  background-attachment: fixed !important;
+  color: var(--mb-cream);
 }
-body.task-login { font-family: Geist, "Segoe UI", Roboto, Arial, sans-serif; }
-body.task-login #layout,
-body.task-login #layout-content,
-body.task-login #layout > div { background: transparent !important; border: 0 !important; box-shadow: none !important; }
+html body.task-login { height: auto !important; min-height: 100vh; overflow: auto !important; font-family: Roboto, "Segoe UI", Arial, sans-serif; }
+body.task-login #layout { display: block !important; height: auto !important; min-height: 100vh; overflow: visible !important; background: transparent !important; }
 body.task-login #layout-content {
   display: flex !important; flex-direction: column; align-items: center; justify-content: center;
-  min-height: 100vh; padding: 32px 16px !important; overflow: auto;
+  min-height: 100vh; height: auto !important; padding: 40px 16px 48px !important;
+  background: transparent !important; border: 0 !important; text-align: center;
 }
 
-/* Logo: the cream Mechbridge mark replaces Roundcube's. */
+/* Logo: Elastic's image is swapped for the cream Mechbridge logo. */
 body.task-login #logo {
   content: url(logo.svg);
-  display: block; width: 168px !important; height: auto !important; max-width: 60vw; max-height: none !important;
-  margin: 0 auto 26px !important;
+  position: static !important; top: auto !important; display: block;
+  width: 148px !important; height: auto !important; max-width: 50vw; max-height: none !important;
+  margin: 0 auto 28px !important; opacity: 1 !important;
 }
 
 /* The card. */
 body.task-login #login-form {
-  position: relative; overflow: hidden; width: min(420px, 100%); max-width: none !important; margin: 0 auto !important;
-  padding: 34px 28px 26px !important; border-radius: 18px;
-  background: #1A2841 !important; border: 1px solid #2C3D5C; color: #F0E1CE;
-  box-shadow: 0 40px 90px -40px rgba(0, 0, 0, .8);
+  position: relative !important; top: auto !important; overflow: hidden;
+  width: 100%; max-width: 400px !important; margin: 0 auto !important; padding: 36px 32px 28px !important;
+  border-radius: 20px; background: var(--mb-navy) !important; border: 1px solid var(--mb-line);
+  box-shadow: 0 40px 80px -40px rgba(0, 0, 0, .85), 0 0 0 1px rgba(240, 225, 206, .03) inset;
+  text-align: left; color: var(--mb-cream);
 }
-body.task-login #login-form::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 4px; background: #B11722; }
-body.task-login .mb-login-head { text-align: center; margin: 0 0 22px; }
-body.task-login .mb-login-head h2 { margin: 0; font-size: 1.6rem; line-height: 1.1; font-weight: 800; letter-spacing: -.01em; color: #F0E1CE; }
-body.task-login .mb-login-head p { margin: 6px 0 0; color: #B8C1D3; font-size: .9375rem; }
+body.task-login #login-form::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 4px; background: var(--mb-red); }
+body.task-login .mb-login-head { text-align: center; margin: 0 0 26px; }
+body.task-login .mb-login-head h2 { margin: 0; font: 800 1.625rem/1.15 Roboto, "Segoe UI", Arial, sans-serif; letter-spacing: -.01em; color: var(--mb-cream); }
+body.task-login .mb-login-head p { margin: 6px 0 0; color: var(--mb-muted); font-size: .9375rem; }
 
-body.task-login #login-form table,
-body.task-login #login-form tbody,
-body.task-login #login-form tr,
-body.task-login #login-form td { display: block; width: 100%; border: 0; padding: 0; background: none; }
-body.task-login #login-form tr { margin-bottom: 12px; }
-body.task-login #login-form td.title { display: block; margin-bottom: 6px; font-size: .8125rem; font-weight: 600; color: #D6DCE7; text-align: left; }
-body.task-login #login-form td.title label { color: inherit; }
-
-body.task-login #login-form input.form-control,
-body.task-login #login-form input[type="text"],
-body.task-login #login-form input[type="password"],
-body.task-login #login-form input[type="email"] {
-  height: 52px; width: 100%; padding: 0 16px; border-radius: 12px !important;
-  background: #0D1523 !important; color: #F0E1CE !important; border: 1px solid #3A4C6E !important;
-  font-size: 1rem; box-shadow: none !important; transition: border-color .2s, box-shadow .2s;
+/* Rows: visible label above each field (Elastic hides them; labels beat placeholder-only fields). */
+body.task-login #login-form table, body.task-login #login-form tbody { display: block; width: 100%; margin: 0; }
+body.task-login #login-form tr { display: block !important; margin: 0 0 18px !important; padding: 0; }
+body.task-login #login-form td.title {
+  display: block !important; width: 100%; padding: 0 0 8px; border: 0; background: none; text-align: left;
+  font-size: .8125rem; font-weight: 600; letter-spacing: .02em; color: #D6DCE7;
 }
-body.task-login #login-form input::placeholder { color: #7F8BA3; opacity: 1; }
-body.task-login #login-form input:focus { outline: none; border-color: #F0E1CE !important; box-shadow: 0 0 0 3px rgba(240, 225, 206, .18) !important; }
-body.task-login #login-form .input-group { flex-wrap: nowrap; }
+body.task-login #login-form td.title label { margin: 0; color: inherit; }
+
+/* Field with icon: one rounded unit. */
+body.task-login #login-form td.input {
+  display: flex !important; flex-wrap: nowrap !important; align-items: stretch; width: 100%; padding: 0; border: 0; background: none;
+  border-radius: 12px; transition: box-shadow .2s;
+}
+body.task-login #login-form .input-group-prepend { display: flex; margin: 0; }
 body.task-login #login-form .input-group-text {
-  height: 52px; background: #0D1523 !important; color: #9BA7BE !important; border: 1px solid #3A4C6E !important; border-right: 0 !important;
-  border-radius: 12px 0 0 12px !important;
+  display: flex; align-items: center; justify-content: center; width: 48px; height: 52px; padding: 0; margin: 0;
+  background: var(--mb-navy-950) !important; color: var(--mb-faint) !important; font-size: 1rem;
+  border: 1px solid var(--mb-line) !important; border-right: 0 !important; border-radius: 12px 0 0 12px !important;
+  transition: color .2s, border-color .2s;
 }
-body.task-login #login-form .input-group .input-group-prepend + input.form-control,
-body.task-login #login-form .input-group .input-group-prepend ~ input { border-radius: 0 12px 12px 0 !important; border-left: 0 !important; }
+body.task-login #login-form .input-group-text::before { float: none; margin: 0; }
+body.task-login #login-form input.form-control {
+  flex: 1 1 auto; min-width: 0; width: 1%; height: 52px; padding: 0 16px; margin: 0;
+  background: var(--mb-navy-950) !important; color: var(--mb-cream) !important;
+  border: 1px solid var(--mb-line) !important; border-left: 0 !important; border-radius: 0 12px 12px 0 !important;
+  font-size: 16px !important; box-shadow: none !important; outline: none; transition: border-color .2s; /* 16px stops iPhones zooming in */
+}
+body.task-login #login-form input.form-control::placeholder { color: #6F7C96; opacity: 1; }
+/* Focus: the whole field lights up, icon included. */
+body.task-login #login-form td.input:focus-within { box-shadow: 0 0 0 3px rgba(240, 225, 206, .22); }
+body.task-login #login-form td.input:focus-within .input-group-text,
+body.task-login #login-form td.input:focus-within input.form-control { border-color: var(--mb-cream) !important; }
+body.task-login #login-form td.input:focus-within .input-group-text { color: var(--mb-cream) !important; }
+body.task-login #login-form td.input:hover:not(:focus-within) .input-group-text,
+body.task-login #login-form td.input:hover:not(:focus-within) input.form-control { border-color: var(--mb-line-strong) !important; }
+/* Browser autofill keeps the navy field instead of turning light blue. */
+body.task-login #login-form input:-webkit-autofill,
+body.task-login #login-form input:-webkit-autofill:hover,
+body.task-login #login-form input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--mb-cream) !important; caret-color: var(--mb-cream);
+  -webkit-box-shadow: 0 0 0 1000px var(--mb-navy-950) inset !important; box-shadow: 0 0 0 1000px var(--mb-navy-950) inset !important;
+  transition: background-color 100000s ease-out 0s;
+}
+body.task-login #login-form input.is-invalid, body.task-login #login-form .is-invalid input { border-color: var(--mb-red-300) !important; }
 
-body.task-login #login-form .formbuttons { margin: 18px 0 0 !important; padding: 0 !important; }
+/* Button. */
+body.task-login #login-form .formbuttons { margin: 26px 0 0 !important; padding: 0 !important; }
 body.task-login #rcmloginsubmit {
-  width: 100%; height: 52px; margin: 0; border-radius: 12px; border: 1px solid #B11722 !important;
-  background: #B11722 !important; color: #FBF8F3 !important; font-size: 1rem; font-weight: 700; letter-spacing: .01em; text-transform: none;
-  transition: background .2s, transform .1s;
+  display: block; width: 100%; height: 52px; margin: 0; padding: 0 20px; border-radius: 12px;
+  border: 1px solid var(--mb-red) !important; background: var(--mb-red) !important; color: var(--mb-paper) !important;
+  font-size: 16px !important; font-weight: 700; letter-spacing: .01em; text-transform: none !important; line-height: 1;
+  box-shadow: 0 10px 24px -12px rgba(177, 23, 34, .8); cursor: pointer; transition: background-color .2s, transform .1s, box-shadow .2s;
 }
-body.task-login #rcmloginsubmit:hover, body.task-login #rcmloginsubmit:focus { background: #8E121B !important; border-color: #8E121B !important; }
-body.task-login #rcmloginsubmit:focus-visible { outline: 3px solid rgba(240, 225, 206, .5); outline-offset: 2px; }
-body.task-login #rcmloginsubmit:active { transform: translateY(1px); }
+body.task-login #rcmloginsubmit:hover { background: var(--mb-red-dark) !important; border-color: var(--mb-red-dark) !important; }
+body.task-login #rcmloginsubmit:focus-visible { outline: 3px solid rgba(240, 225, 206, .55); outline-offset: 3px; }
+body.task-login #rcmloginsubmit:active { transform: translateY(1px); box-shadow: none; }
+body.task-login #rcmloginsubmit:disabled { opacity: .6; cursor: progress; }
 
-body.task-login .mb-login-note { max-width: 420px; margin: 18px auto 0; padding: 0 8px; text-align: center; color: #B8C1D3; font-size: .875rem; line-height: 1.55; }
-body.task-login #login-footer { margin-top: 22px; text-align: center; color: #7F8BA3 !important; font-size: .8125rem; }
-body.task-login #login-footer a { color: #E8868D !important; }
+/* Note and footer. */
+body.task-login .mb-login-note { margin: 20px 0 0; padding: 18px 0 0; border-top: 1px solid var(--mb-line); text-align: center; color: var(--mb-muted); font-size: .8125rem; line-height: 1.6; }
+body.task-login #login-footer { margin: 0; text-align: center; color: var(--mb-faint) !important; font-size: .8125rem; }
+body.task-login #login-footer:empty { display: none; }
+body.task-login #login-footer a { color: var(--mb-red-300) !important; }
 
-/* Error and info messages. */
-body.task-login #messagestack div { border-radius: 12px; }
+/* Messages (wrong password and so on). */
+body.task-login #messagestack { top: 16px; }
+body.task-login #messagestack > div { border-radius: 12px; box-shadow: 0 16px 40px -18px rgba(0, 0, 0, .7); }
 
 @media (max-width: 479px) {
-  body.task-login #login-form { padding: 30px 20px 22px !important; }
-  body.task-login #logo { width: 140px !important; margin-bottom: 20px !important; }
+  body.task-login #layout-content { padding: 28px 14px 36px !important; justify-content: flex-start; }
+  body.task-login #logo { width: 120px !important; margin-bottom: 22px !important; }
+  body.task-login #login-form { padding: 30px 20px 22px !important; border-radius: 16px; }
 }
+@media (max-height: 640px) { body.task-login #layout-content { justify-content: flex-start; } }
 @media (prefers-reduced-motion: reduce) {
-  body.task-login #login-form input, body.task-login #rcmloginsubmit { transition: none; }
+  body.task-login #login-form input, body.task-login #login-form td.input, body.task-login #rcmloginsubmit, body.task-login #login-form .input-group-text { transition: none; }
 }

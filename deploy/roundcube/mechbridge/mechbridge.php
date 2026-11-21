@@ -70,6 +70,7 @@ class mechbridge extends rcube_plugin
 
         if ($rc->task == 'login' || $rc->task == 'logout' || empty($_SESSION['user_id'])) {
             $this->include_stylesheet('login.css');
+            $this->include_script('login.js');
         }
     }
 
@@ -124,7 +125,9 @@ class mechbridge extends rcube_plugin
         $head = html::div(array('class' => 'mb-login-head'),
             html::tag('h2', null, 'Mechbridge Mail') . html::p(null, 'Sign in to your company email'));
         $note = trim((string) $this->settings['login_note']);
-        $args['content'] = $head . $args['content'] . ($note !== '' ? html::p(array('class' => 'mb-login-note'), rcube::Q($note)) : '');
+        // People sign in with their full address, so say that instead of "Username".
+        $form = preg_replace('#(<label for="rcmloginuser">)[^<]*(</label>)#', '$1Email address$2', $args['content']);
+        $args['content'] = $head . $form . ($note !== '' ? html::p(array('class' => 'mb-login-note'), rcube::Q($note)) : '');
         return $args;
     }
 

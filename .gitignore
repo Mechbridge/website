@@ -6,3 +6,6 @@ dist/
 .impeccable/review/
 .impeccable/hook.cache.json
 /data/
+
+# Private notes and access sheets (never commit)
+/private/

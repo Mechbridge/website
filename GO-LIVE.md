@@ -448,11 +448,11 @@ sudo rm -rf /usr/share/roundcube/plugins/mechbridge
 sudo cp -r deploy/roundcube/mechbridge /usr/share/roundcube/plugins/mechbridge
 sudo chmod -R a+rX /usr/share/roundcube/plugins/mechbridge
 [ -d /var/lib/roundcube/plugins ] && [ ! -L /var/lib/roundcube/plugins ] && sudo ln -sfn /usr/share/roundcube/plugins/mechbridge /var/lib/roundcube/plugins/mechbridge
-grep -q "'mechbridge'" /etc/roundcube/config.inc.php || sudo sed -i "s/'markasjunk'\]/'markasjunk', 'mechbridge']/" /etc/roundcube/config.inc.php
-grep -n "'mechbridge'" /etc/roundcube/config.inc.php
+sudo grep -q "'mechbridge'" /etc/roundcube/config.inc.php || sudo sed -i "s/'markasjunk'\]/'markasjunk', 'mechbridge']/" /etc/roundcube/config.inc.php
+sudo grep -n "'mechbridge'" /etc/roundcube/config.inc.php
 sudo systemctl reload php*-fpm
 ```
-The `grep` line must print the plugins line with `'mechbridge'` in it. Then open https://mail.mechbridgegroup.com: the sign-in screen is navy with the Mechbridge logo, a cream heading and a red sign-in button. If it shows error 500 instead, run `sudo tail -n 20 /var/log/nginx/error.log` and send the output to the developer.
+The last `grep` must print the plugins line with `'mechbridge'` in it. Then open https://mail.mechbridgegroup.com: the sign-in screen is navy with the Mechbridge logo, a cream heading and a red sign-in button. If it shows error 500 instead, run `sudo tail -n 20 /var/log/nginx/error.log` and send the output to the developer.
 
 How the portal settings reach webmail:
 - **Settings for everyone** apply the next time each person signs in. Unlocked, they are defaults that people can change in webmail; locked, they always apply.
