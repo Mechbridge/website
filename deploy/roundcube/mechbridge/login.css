@@ -111,8 +111,12 @@ body.task-login #login-footer:empty { display: none; }
 body.task-login #login-footer a { color: var(--mb-red-300) !important; }
 
 /* Messages (wrong password and so on). */
-body.task-login #messagestack { top: 16px; }
-body.task-login #messagestack > div { border-radius: 12px; box-shadow: 0 16px 40px -18px rgba(0, 0, 0, .7); }
+/* Elastic pins the stack to the bottom (full width on phones) above everything. Never give it a top:
+   that stretches it into an invisible layer over the form and blocks typing on phones.
+   The empty stack also lets taps through; only the messages themselves take them. */
+body.task-login #messagestack { pointer-events: none; }
+body.task-login #messagestack > div { pointer-events: auto; border-radius: 12px; box-shadow: 0 16px 40px -18px rgba(0, 0, 0, .7); }
+@media (max-width: 480px) { body.task-login #messagestack > div { border-radius: 0; } }
 
 @media (max-width: 479px) {
   body.task-login #layout-content { padding: 28px 14px 36px !important; justify-content: flex-start; }
