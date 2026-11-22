@@ -1,7 +1,7 @@
 ---
 import { u } from '../lib/url';
 import Logo from './Logo.astro';
-import { site, offices, servesShort } from '../data/site';
+import { site, offices, servesWorld } from '../data/site';
 import { services } from '../data/services';
 const year = new Date().getFullYear();
 ---
@@ -9,7 +9,7 @@ const year = new Date().getFullYear();
   <div class="wrap">
     <div class="foot__top">
       <a href={u('/')} class="foot__logo" aria-label="Mechbridge International, home"><Logo /></a>
-      <p class="foot__line">HVAC, firefighting and plumbing engineering, MEP design, estimation and project management. Headquartered in Dubai, serving India and the GCC.</p>
+      <p class="foot__line">HVAC, firefighting and plumbing engineering, MEP design, estimation and project management. Headquartered in Dubai, with projects in more than 10 countries.</p>
     </div>
     <div class="foot__cols">
       <div>
@@ -41,17 +41,13 @@ const year = new Date().getFullYear();
       <div class="foot__where">
         <h2 class="foot__h">Where we work</h2>
         <ul>
-          {offices.map((o) => <li class="foot__office"><span class="foot__k">{o.role}</span><span>{o.city}</span></li>)}
-          <li class="foot__office"><span class="foot__k">Serving</span><span class="foot__serves">{servesShort.join(' · ')}</span></li>
+          {offices.map((o) => <li class="foot__office"><span class="foot__k">{o.role}</span><span>{o.label}</span></li>)}
+          <li class="foot__office"><span class="foot__k">Serving</span><span class="foot__serves">{servesWorld.join(' · ')}</span></li>
         </ul>
       </div>
     </div>
     <div class="foot__base">
       <p>© {year} {site.company}.</p>
-      <a class="foot__credit" href="https://shinelabsinnovations.com" target="_blank" rel="noopener">
-        <img src={u('/brand/shine-labs-innovation.svg')} alt="" width="34" height="20" loading="lazy" decoding="async" />
-        <span>Designed and developed by Shine Labs Innovation</span>
-      </a>
     </div>
   </div>
 </footer>
@@ -72,10 +68,6 @@ const year = new Date().getFullYear();
   .foot__office span:last-child { padding: 6px 0 8px; }
   .foot__serves { line-height: 1.6; }
   .foot__base { display: flex; justify-content: space-between; align-items: center; gap: 12px 24px; flex-wrap: wrap; padding-top: 24px; border-top: 1px solid var(--navy-600); color: var(--navy-200); font-size: var(--t-small); }
-  .foot .foot__credit { gap: 10px; color: var(--navy-200); font-size: var(--t-micro); letter-spacing: .02em; opacity: .85; transition: opacity .2s, color .2s; }
-  .foot .foot__credit:hover { color: var(--cream-300); opacity: 1; }
-  .foot__credit img { width: 34px; height: 20px; flex: none; }
-  .foot__credit span { line-height: 1.4; }
   @media (max-width: 899px) {
     .foot__top { grid-template-columns: 1fr; gap: 20px; }
     .foot__line { justify-self: start; }

@@ -10,7 +10,7 @@ The site doesn't invent numbers, names or credentials. These items are missing, 
 | Internship duration and fee | /internships | "Shared on enquiry" |
 | Batch dates and internship intakes | /training, /internships | Posted from the admin portal (Training and HR roles) |
 | Open roles | /careers | Posted from the admin portal (HR role) |
-| Office street addresses (Dubai HQ, India), and the Indian city | Footer, contact page, structured data | City or country only (`src/data/site.ts`) |
+| Tabby and Tamara logo files from each merchant brand kit | Training page instalments block | Partner names in plain tiles (`public/brand/tabby.*`, `tamara.*`) |
 | Certification or accreditation body, if any | Training FAQ, certificates | The certificate is issued by Mechbridge International MEP Consultants only |
 | Authorised signatory | Printed certificate | A blank signature line labelled "Authorised signatory" (no name, per the no-team-names rule) |
 
@@ -25,7 +25,8 @@ The site doesn't invent numbers, names or credentials. These items are missing, 
 ## Confirmed by you
 
 - Logo and title: Mechbridge International. Company name: Mechbridge International MEP Consultants. Domain: mechbridgegroup.com.
-- 15+ years in the industry. Headquarters in Dubai, operating from Dubai and India, serving and hiring in the UAE, Saudi Arabia, Qatar, Kuwait, Bahrain, Oman and India.
+- 15+ years in the industry, 7,000+ projects completed, projects in 10+ countries. Headquarters at Unbox, World Trade Center, Dubai; operations office in Kozhikode, Kerala, India (full address in `src/data/site.ts`). Hiring in the UAE, Saudi Arabia, Qatar, Kuwait, Bahrain, Oman and India.
+- Recent highlights: Jasleena’s Residence, Mohammed’s Residence, Zangos (photos supplied 2026-11-22).
 - connect@, support@, careers@ and intern@mechbridgegroup.com.
 - Training is online-only in practice and never advertised as offline.
 - Primary offerings: HVAC, Firefighting, Plumbing, MEP Design, MEP Estimation and Project Management, Professional Engineering Training.

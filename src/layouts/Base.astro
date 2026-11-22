@@ -41,7 +41,7 @@ const graph: Record<string, unknown>[] = [
     email: site.connect,
     foundingLocation: { '@type': 'Place', name: 'Dubai, United Arab Emirates' },
     areaServed: serves.map((name) => ({ '@type': 'Country', name })),
-    location: offices.map((o) => ({ '@type': 'Place', name: `${site.name}, ${o.city}`, address: { '@type': 'PostalAddress', addressLocality: o.city === 'India' ? undefined : o.city, addressCountry: o.country } })),
+    location: offices.map((o) => ({ '@type': 'Place', name: `${site.name}, ${o.city}`, address: { '@type': 'PostalAddress', streetAddress: o.street, addressLocality: o.city, addressRegion: o.region, postalCode: o.postalCode, addressCountry: o.country } })),
     knowsAbout: ['HVAC engineering', 'Firefighting engineering', 'Fire protection', 'Plumbing engineering', 'MEP design', 'Shop drawings', 'BOQ preparation', 'MEP cost estimation', 'Project management'],
     contactPoint: [
       { '@type': 'ContactPoint', contactType: 'sales', email: site.connect, areaServed: servesShort, availableLanguage: ['English'] },

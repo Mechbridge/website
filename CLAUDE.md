@@ -49,8 +49,11 @@ There are no tests or linters. Both `npm run build` and `npm run build:demo` mus
 - Colours: Midnight Navy `#1A2841`, Old Cream `#F0E1CE`, Vintage Red `#B11722`. Never red text on navy (use `red-300`). Glass and `FlutedGlass` appear only over photos or the clay scene.
 - Logo: `src/data/logo-inner.svg` (skyscraper "M" monogram + MECHBRIDGE wordmark, `currentColor`), rendered by `Logo.astro` (`variant="mark"` crops to the monogram). Static colour versions are in `public/logo/`.
 - **No team names, portraits or team photos anywhere.** Alt text must not claim a photo shows Mechbridge staff.
-- Don't invent figures, clients, fees, durations or credentials. Only "15+ years" is confirmed. Open items are tracked in `CONTENT-TODO.md`.
+- Don't invent figures, clients, fees, durations or credentials. Confirmed: 15+ years in the industry, 7,000+ projects completed, projects in 10+ countries (`site.years`, `track` in `src/data/site.ts`). Open items are tracked in `CONTENT-TODO.md`.
+- Clients named on the site are only the "Recent highlights" in `src/data/projects.ts` (Jasleena’s Residence, Mohammed’s Residence, Zangos), shown by `Highlights.astro` after the home page clay zone. Present them as a few recent projects, never as the client list, and don't claim a scope for them that the client hasn't confirmed.
+- Training: one course with three modules (HVAC, firefighting, plumbing). Don't list AutoCAD, Revit MEP or BIM as course content (they stay in the MEP design service). Don't mention electrical or civil engineering streams anywhere. Instalments with Tabby and Tamara are offered for the course (`PayPartners.astro`; official logo files go in `public/brand/tabby.*` and `tamara.*`).
+- No designer or developer credit in the footer.
 - No eyebrow/kicker labels above headings. Write copy in plain, specific sentences with no em dashes.
-- Locations: headquartered in Dubai, operating from Dubai and India, serving and hiring in the UAE, Saudi Arabia, Qatar, Kuwait, Bahrain, Oman and India (`gcc`, `serves`, `servesShort` in `src/data/site.ts`). Say "GCC", never "Gulf".
+- Locations: headquartered in Dubai (Unbox, World Trade Center), operating from Dubai and Kozhikode, India (`offices` in `src/data/site.ts` holds the full addresses). Market globally with the GCC first but unstated: lists read GCC states, India, then "Worldwide" (`servesWorld`); hiring stays the GCC states and India (`servesShort`). Say "GCC", never "Gulf".
 - Training is online-only in practice, but never advertise that or any classroom/office training. Use "live, instructor-led sessions".
 - Emails: connect@ (proposals, training), support@, careers@ (job leads), intern@ (internship leads). `EnquiryForm` takes a `mail` prop, and `notify.ts` routes alerts by lead type.

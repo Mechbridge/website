@@ -5,20 +5,22 @@ import ImageSlot from '../../components/ImageSlot.astro';
 import FlutedGlass from '../../components/FlutedGlass.astro';
 import EnquiryForm from '../../components/EnquiryForm.astro';
 import Arrow from '../../components/Arrow.astro';
+import PayPartners from '../../components/PayPartners.astro';
 import { course, compare, steps } from '../../data/course';
 import { site } from '../../data/site';
 
 const faqs = [
-  ['Do I need work experience?', 'No. The course suits final-year students and fresh graduates in mechanical, civil or electrical engineering, and working engineers who want to move into MEP design. A short skills check puts you at the right level.'],
-  ['Is it one course or several?', 'One course. HVAC, firefighting, plumbing, AutoCAD and Revit MEP are taught together, the way they come together on a real drawing set.'],
+  ['Do I need work experience?', 'No. The course suits final-year students and fresh graduates in mechanical engineering, and working engineers who want to move into MEP design. A short skills check puts you at the right level.'],
+  ['Is it one course or several?', 'One course. HVAC, firefighting and plumbing are taught together, the way they come together on a real drawing set.'],
   ['Who teaches it?', 'Engineers from Mechbridge International MEP Consultants who design these systems on current projects.'],
   ['Do I get a certificate?', 'Yes. Each certificate carries a unique code. Employers can check it on our verification page.'],
   ['Can I train while I work?', 'Yes. Sessions are scheduled around a working week, so most engineers train alongside their jobs.'],
   ['What does it cost and when does the next batch start?', 'Published batches are listed on this page with their start dates. Send an enquiry and we will reply with the fee and the current schedule.'],
+  ['Can I pay in instalments?', 'Yes. You can pay the course fee in instalments with Tabby or Tamara.'],
 ];
 const gallery = [
   { id: 'work-heatload', ratio: '4 / 3', alt: 'Heat load workbook on a laptop beside a printed floor plan', label: 'Heat load workbook + floor plan' },
-  { id: 'work-model', ratio: '4 / 5', alt: 'Revit MEP model of a plant room', label: 'Revit MEP plant room model' },
+  { id: 'work-model', ratio: '4 / 5', alt: 'Engineers reviewing a 3D model of a pump room on a screen', label: 'Pump room model on screen' },
   { id: 'work-markup', ratio: '4 / 5', alt: 'Firefighting layout with red review mark-ups', label: 'Layout with review mark-ups' },
   { id: 'work-sld', ratio: '4 / 3', alt: 'Schematic drawings pinned to a wall', label: 'Schematics on a pin-up wall' },
   { id: 'work-site', ratio: '16 / 9', alt: 'Site visit in hard hats looking at exposed ductwork', label: 'Site visit, exposed ductwork' },
@@ -47,7 +49,7 @@ const trainingLd = [
   breadcrumbs={[['Training', '/training']]}
   jsonLd={trainingLd}
   title="Professional MEP Engineering Training"
-  description="One course in HVAC, firefighting, plumbing, AutoCAD and Revit MEP, taught by engineers from Mechbridge International MEP Consultants for engineers across the GCC and India."
+  description="One course in HVAC, firefighting and plumbing design, taught by engineers from Mechbridge International MEP Consultants. Live, instructor-led sessions, a verifiable certificate, and instalments with Tabby or Tamara."
 >
   <section class="t-hero" data-enter aria-labelledby="t-hero-h">
     <div class="wrap t-hero__grid">
@@ -65,6 +67,7 @@ const trainingLd = [
           <div class="tblock__row"><span class="tblock__k">Modules</span><span class="tblock__v">{course.modules.map((m) => m.title).join(' · ')}</span></div>
           <div class="tblock__row"><span class="tblock__k">Sessions</span><span class="tblock__v">Live, instructor-led</span></div>
           <div class="tblock__row"><span class="tblock__k">Certificate</span><a class="tblock__v t-verify" href={u('/verify')}>Verifiable online</a></div>
+          <div class="tblock__row"><span class="tblock__k">Payment</span><span class="tblock__v">Instalments with Tabby or Tamara</span></div>
         </div>
       </div>
     </div>
@@ -87,7 +90,7 @@ const trainingLd = [
   <section class="section g-navy" id="modules" aria-labelledby="mod-h">
     <div class="wrap">
       <div class="mod-head">
-        <h2 id="mod-h" data-split>Five modules, one drawing set.</h2>
+        <h2 id="mod-h" data-split>Three modules, one drawing set.</h2>
         <p class="body">Each module ends with drawings and calculations you hand in for review. By the last one you have a complete MEP set for one building.</p>
       </div>
       <ol class="mods">
@@ -182,6 +185,7 @@ const trainingLd = [
           <div class="tblock__row"><span class="tblock__k">Training</span><a class="tblock__v link" href={`mailto:${site.connect}`}>{site.connect}</a></div>
           <div class="tblock__row"><span class="tblock__k">Certificates</span><a class="tblock__v link" href={u('/verify')}>Verify a certificate</a></div>
         </div>
+        <PayPartners class="enq__pay" />
       </div>
       <div class="enq__form">
         <p class="picked" data-picked hidden>Enquiring about <strong data-ref-title></strong> <button type="button" data-unpick>Any batch instead</button></p>
@@ -223,7 +227,7 @@ const trainingLd = [
   .theme-red :global(.slot--ph) { background-color: var(--red-600); border-color: var(--red-400); color: var(--cream-300); }
 
   .mod-head { display: grid; grid-template-columns: 1.3fr 1fr; gap: 32px; align-items: end; margin-bottom: clamp(40px, 5vw, 64px); }
-  .mods { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 16px; }
+  .mods { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
   .mod { padding: 22px 20px; border-radius: 12px; background: var(--navy-600); border: 1px solid var(--navy-500); display: grid; gap: 12px; align-content: start; }
   .mod__code { color: var(--red-300); font-size: var(--t-micro); }
   .mod ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; color: var(--navy-100); font-size: var(--t-small); }
@@ -273,8 +277,8 @@ const trainingLd = [
   .enq__copy { grid-column: 1 / 6; --flow: 28px; }
   .enq__form { grid-column: 7 / 13; }
   .enq__tb .link { min-height: 0; justify-self: end; overflow-wrap: anywhere; }
+  .enq__copy :global(.enq__pay) { margin-top: 8px; padding-top: 24px; border-top: var(--hair); }
 
-  @media (max-width: 1199px) { .mods { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
   @media (max-width: 1099px) {
     .t-hero__grid, .red__row, .mod-head, .gl-head, .int { grid-template-columns: 1fr; }
     .t-hero__block { left: 16px; bottom: 16px; }
@@ -284,7 +288,7 @@ const trainingLd = [
     .gl { grid-template-columns: 1fr 1fr; }
     .gl__i { grid-column: auto !important; }
     .gl__i--5 { grid-column: 1 / -1 !important; }
-    .mods { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .mods { grid-template-columns: 1fr; }
   }
   @media (max-width: 599px) {
     .mods { grid-template-columns: 1fr; }

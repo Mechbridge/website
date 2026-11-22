@@ -3,7 +3,8 @@ import { u } from '../lib/url';
 import Base from '../layouts/Base.astro';
 import ImageSlot from '../components/ImageSlot.astro';
 import Arrow from '../components/Arrow.astro';
-import { site, offices, servesShort } from '../data/site';
+import Highlights from '../components/Highlights.astro';
+import { site, offices, servesWorld, track } from '../data/site';
 import { services, serviceBySlug, projectProcess, codesWeUse } from '../data/services';
 
 const hvac = serviceBySlug('hvac-engineering')!;
@@ -37,7 +38,7 @@ const clayMobile = Array.from({ length: 10 }, (_, i) => ({ x: i % 2 ? 0.24 : 0.7
   og="home"
   ogAlt="Mechbridge International MEP Consultants: night skyline with red-edged towers"
   title={site.name}
-  description="Mechbridge International MEP Consultants: HVAC, firefighting and plumbing engineering, MEP design and shop drawings, estimation and project management. Headquartered in Dubai, serving the GCC and India."
+  description="Mechbridge International MEP Consultants: HVAC, firefighting and plumbing engineering, MEP design and shop drawings, estimation and project management. Headquartered in Dubai, with more than 7,000 projects completed in over 10 countries."
   glassNav
 >
   <Fragment slot="outside">
@@ -55,17 +56,18 @@ const clayMobile = Array.from({ length: 10 }, (_, i) => ({ x: i % 2 ? 0.24 : 0.7
     <div class="wrap hero__inner">
       <div class="hero__copy">
         <h1 id="hero-h">MEP consultants of the engineering shaping the Middle East.</h1>
-        <p class="lede" data-enter-item>HVAC, firefighting and plumbing engineering, MEP design and shop drawings, estimation and project management. Headquartered in Dubai, working across the UAE, Saudi Arabia, Qatar, Kuwait, Bahrain, Oman and India.</p>
+        <p class="lede" data-enter-item>HVAC, firefighting and plumbing engineering, MEP design and shop drawings, estimation and project management. Headquartered in Dubai, with more than 7,000 projects completed in over 10 countries.</p>
         <div class="btn-row" data-enter-item>
           <a class="btn" href={u('/contact?topic=consultancy')}>Request a proposal <Arrow /></a>
           <a class="btn btn--ghost" href={u('/services')}>Explore our services</a>
         </div>
       </div>
       <aside class="hero__block glass" data-enter-item aria-label="Mechbridge at a glance">
-        <div class="tblock__row"><span class="tblock__k">Company</span><span class="tblock__v">MEP Consultants</span></div>
         <div class="tblock__row"><span class="tblock__k">Headquarters</span><span class="tblock__v">Dubai</span></div>
         <div class="tblock__row"><span class="tblock__k">Operating from</span><span class="tblock__v">Dubai · India</span></div>
-        <div class="tblock__row"><span class="tblock__k">In the industry</span><span class="tblock__v">15+ years</span></div>
+        <div class="tblock__row"><span class="tblock__k">Projects completed</span><span class="tblock__v">{track.projects}</span></div>
+        <div class="tblock__row"><span class="tblock__k">Countries</span><span class="tblock__v">{track.countries}</span></div>
+        <div class="tblock__row"><span class="tblock__k">In the industry</span><span class="tblock__v">{site.years} years</span></div>
       </aside>
     </div>
     <a class="hero__cue dot" href="#who" aria-label="Scroll to the next section">Scroll <Arrow dir="down" /></a>
@@ -79,7 +81,7 @@ const clayMobile = Array.from({ length: 10 }, (_, i) => ({ x: i % 2 ? 0.24 : 0.7
       <div class="wrap cs__in">
         <div class="cs__card s0">
           <h2 id="s0-h" data-split>One engineering office for every system behind the walls.</h2>
-          <p class="lede">Mechbridge International MEP Consultants designs, measures and follows through the mechanical, plumbing and fire systems of buildings. Our engineers have been in the industry for more than fifteen years and work to the codes each GCC authority enforces.</p>
+          <p class="lede">Mechbridge International MEP Consultants designs, measures and follows through the mechanical, plumbing and fire systems of buildings. Our engineers have more than fifteen years in the industry and design to the codes each authority enforces, in the GCC and in every other country we work in.</p>
           <ul class="index">
             {services.map((s) => (
               <li><a href={u(`/services/${s.slug}`)}><span class="index__ref mono">{s.ref}</span><span class="index__t">{s.title}</span><span class="index__h">{s.highlights.join(' · ')}</span><Arrow /></a></li>
@@ -173,7 +175,7 @@ const clayMobile = Array.from({ length: 10 }, (_, i) => ({ x: i % 2 ? 0.24 : 0.7
       </div>
     </section>
 
-    <!-- 6 · electrical · near-black · PROCESS -->
+    <!-- 6 · near-black · PROCESS -->
     <section class="cs cs--R cs--full" aria-labelledby="s6-h">
       <div class="wrap cs__in">
         <div class="cs__card s6">
@@ -191,15 +193,15 @@ const clayMobile = Array.from({ length: 10 }, (_, i) => ({ x: i % 2 ? 0.24 : 0.7
     <section class="cs cs--L" aria-labelledby="s7-h">
       <div class="wrap cs__in">
         <div class="cs__card s7">
-          <h2 id="s7-h" data-split>Headquartered in Dubai, working across the GCC.</h2>
-          <p class="lede">Projects across the GCC are often designed in one country and built in another. Our teams in Dubai and India work to one standard, with the same drawings, codes and checklists for every client, wherever the site is.</p>
-          <ul class="chips serves" aria-label="Countries we serve">{servesShort.map((c) => <li>{c}</li>)}</ul>
+          <h2 id="s7-h" data-split>Headquartered in Dubai, working worldwide.</h2>
+          <p class="lede">Many projects are designed in one country and built in another. Our teams in Dubai and Kozhikode work to one standard, with the same drawings, codes and checklists for every client, wherever the site is.</p>
+          <ul class="chips serves" aria-label="Where we work">{servesWorld.map((c) => <li>{c}</li>)}</ul>
           <ul class="offices">
             {offices.map((o) => (
               <li>
                 <ImageSlot id={o.img} ratio="3 / 4" alt={`${o.city}: city view`} label={`${o.city}: city or office building`} />
                 <p class="offices__role mono">{o.role}</p>
-                <p class="offices__city">{o.city}</p>
+                <p class="offices__city">{o.label}</p>
               </li>
             ))}
           </ul>
@@ -240,7 +242,7 @@ const clayMobile = Array.from({ length: 10 }, (_, i) => ({ x: i % 2 ? 0.24 : 0.7
             </a>
             <a class="close glass" href={u('/training')}>
               <span class="close__t">Professional training</span>
-              <span class="close__d">One course: HVAC, firefighting, plumbing, AutoCAD and Revit MEP, taught by our engineers.</span>
+              <span class="close__d">One course in HVAC, firefighting and plumbing design, taught by our engineers. Pay in instalments with Tabby or Tamara.</span>
               <span class="link">About the course <Arrow /></span>
             </a>
             <a class="close glass" href={u('/internships')}>
@@ -259,6 +261,8 @@ const clayMobile = Array.from({ length: 10 }, (_, i) => ({ x: i % 2 ? 0.24 : 0.7
       </div>
     </section>
   </div>
+
+  <Highlights />
 </Base>
 
 <script src={u('/bg/three.min.js')} is:inline defer></script>

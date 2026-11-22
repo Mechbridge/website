@@ -1,0 +1,149 @@
+---
+// Recent highlights: three client projects with swipeable photos and a full-size viewer.
+// Not a client list; the copy says these are a few recent projects.
+import { u } from '../lib/url';
+import Arrow from './Arrow.astro';
+import { projects, track } from '../data/projects';
+interface Props { id?: string; heading?: string }
+const { id = 'highlights', heading = 'Recent highlights.' } = Astro.props;
+const src = (p: string, small = false) => u(`/images/projects/${p}${small ? '-640' : ''}.webp`);
+---
+<section class="hl section theme-cream" id={id} aria-labelledby={`${id}-h`}>
+  <div class="wrap">
+    <div class="hl__head">
+      <h2 id={`${id}-h`} data-split>{heading}</h2>
+      <div class="hl__intro">
+        <p class="lede">A few of our recent projects, and what our team has delivered so far.</p>
+        <dl class="hl__figs">
+          <div><dt>Projects completed</dt><dd>{track.projects}</dd></div>
+          <div><dt>Countries</dt><dd>{track.countries}</dd></div>
+          <div><dt>Years in the industry</dt><dd>{track.years}</dd></div>
+        </dl>
+      </div>
+    </div>
+
+    <ul class="hl__grid">
+      {projects.map((p) => (
+        <li class="hl__card" data-gallery>
+          <div class="hl__frame">
+            <div class="hl__track" tabindex="0" role="group" aria-roledescription="carousel" aria-label={`${p.name}: photos`}>
+              {p.photos.map((ph, i) => (
+                <button class="hl__shot" type="button" data-full={src(ph.id)} data-alt={ph.alt} aria-label={`View photo ${i + 1} of ${p.photos.length} full size: ${ph.alt}`}>
+                  <img
+                    src={src(ph.id, true)}
+                    srcset={`${src(ph.id, true)} 640w, ${src(ph.id)} ${ph.w}w`}
+                    sizes="(max-width: 899px) 92vw, 30vw"
+                    width={ph.w} height={ph.h} alt={ph.alt}
+                    style={ph.pos ? `object-position:${ph.pos}` : undefined}
+                    loading="lazy" decoding="async"
+                  />
+                </button>
+              ))}
+            </div>
+            {p.photos.length > 1 && (
+              <div class="hl__ctl">
+                <span class="hl__count mono" aria-live="polite"><span data-cur>1</span> / {p.photos.length}</span>
+                <button class="hl__nav" type="button" data-prev aria-label={`Previous photo of ${p.name}`}><Arrow dir="left" /></button>
+                <button class="hl__nav" type="button" data-next aria-label={`Next photo of ${p.name}`}><Arrow /></button>
+              </div>
+            )}
+          </div>
+          <div class="hl__cap">
+            <h3>{p.name}</h3>
+            <p class="mono hl__type">{p.type}{p.note ? ` · ${p.note}` : ''}</p>
+          </div>
+        </li>
+      ))}
+    </ul>
+
+    <div class="hl__foot">
+      <p class="body">Planning a project of your own?</p>
+      <a class="btn" href={u('/contact?topic=consultancy')}>Request a proposal <Arrow /></a>
+    </div>
+  </div>
+
+  <dialog class="hl__view" aria-label="Project photo">
+    <form method="dialog"><button class="hl__close" aria-label="Close photo">×</button></form>
+    <div class="hl__viewimg"></div>
+    <p class="hl__viewcap"></p>
+  </dialog>
+</section>
+
+<script>
+  // Each card: swipe or use the buttons; the counter follows. A tap opens the photo full size.
+  document.querySelectorAll<HTMLElement>('[data-gallery]').forEach((card) => {
+    const track = card.querySelector<HTMLElement>('.hl__track')!;
+    const cur = card.querySelector<HTMLElement>('[data-cur]');
+    const count = track.children.length;
+    const index = () => Math.round(track.scrollLeft / Math.max(1, track.clientWidth));
+    const go = (i: number) => track.scrollTo({ left: Math.max(0, Math.min(count - 1, i)) * track.clientWidth, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+    card.querySelector('[data-prev]')?.addEventListener('click', () => go(index() - 1));
+    card.querySelector('[data-next]')?.addEventListener('click', () => go(index() + 1));
+    track.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight') { e.preventDefault(); go(index() + 1); }
+      if (e.key === 'ArrowLeft') { e.preventDefault(); go(index() - 1); }
+    });
+    let t = 0;
+    track.addEventListener('scroll', () => { cancelAnimationFrame(t); t = requestAnimationFrame(() => { if (cur) cur.textContent = String(index() + 1); }); }, { passive: true });
+  });
+
+  const view = document.querySelector<HTMLDialogElement>('.hl__view');
+  if (view) {
+    const img = document.createElement('img');
+    view.querySelector('.hl__viewimg')!.append(img);
+    const cap = view.querySelector<HTMLElement>('.hl__viewcap')!;
+    document.querySelectorAll<HTMLButtonElement>('.hl__shot').forEach((b) => b.addEventListener('click', () => {
+      img.src = b.dataset.full!;
+      img.alt = b.dataset.alt ?? '';
+      cap.textContent = b.closest('.hl__card')?.querySelector('h3')?.textContent ?? '';
+      view.showModal();
+    }));
+    view.addEventListener('click', (e) => { if (e.target === view) view.close(); });
+  }
+</script>
+
+<style>
+  .hl { position: relative; z-index: 2; background: var(--cream-300); color: var(--navy-700); }
+  .hl__head { display: grid; grid-template-columns: 1fr 1.1fr; gap: clamp(28px, 5vw, 80px); align-items: end; margin-bottom: clamp(36px, 5vw, 64px); }
+  .hl__head h2 { font-size: clamp(2.6rem, 5.6vw, 5.4rem); max-width: 11ch; }
+  .hl__intro { display: grid; gap: 28px; }
+  .hl__figs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin: 0; }
+  .hl__figs div { padding-top: 14px; border-top: 2px solid var(--navy-700); }
+  .hl__figs dt { font-family: var(--f-mono); font-size: var(--t-micro); letter-spacing: .08em; text-transform: uppercase; color: var(--navy-400); order: 2; }
+  .hl__figs div { display: flex; flex-direction: column-reverse; gap: 6px; }
+  .hl__figs dd { margin: 0; font-family: var(--f-display); font-variation-settings: "wdth" 80, "opsz" 96; font-weight: 750; font-size: clamp(2.2rem, 4.2vw, 3.6rem); line-height: 1; color: var(--red-500); }
+
+  .hl__grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(16px, 2vw, 28px); }
+  .hl__card { display: grid; gap: 16px; align-content: start; }
+  .hl__frame { position: relative; border-radius: 14px; overflow: hidden; background: var(--navy-800); aspect-ratio: 4 / 5; }
+  .hl__track { display: flex; height: 100%; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-x: contain; }
+  .hl__track::-webkit-scrollbar { display: none; }
+  .hl__track:focus-visible { outline: 3px solid var(--red-500); outline-offset: -3px; }
+  .hl__shot { flex: 0 0 100%; height: 100%; padding: 0; border: 0; background: none; scroll-snap-align: start; cursor: zoom-in; }
+  .hl__shot img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .6s var(--ease); }
+  .hl__shot:hover img { transform: scale(1.03); }
+  .hl__shot:focus-visible { outline: 3px solid var(--cream-300); outline-offset: -6px; }
+  .hl__ctl { position: absolute; right: 10px; bottom: 10px; display: flex; align-items: center; gap: 6px; padding: 4px 4px 4px 12px; border-radius: 999px; background: rgb(13 21 35 / .72); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); color: var(--cream-300); }
+  .hl__count { font-size: .75rem; margin-right: 4px; }
+  .hl__nav { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; border: 0; background: transparent; color: var(--cream-300); cursor: pointer; }
+  .hl__nav:hover, .hl__nav:focus-visible { background: rgb(240 225 206 / .16); }
+  .hl__cap h3 { font-size: clamp(1.35rem, 2vw, 1.7rem); }
+  .hl__type { margin-top: 4px; color: var(--navy-400); font-size: var(--t-micro); text-transform: uppercase; letter-spacing: .08em; }
+
+  .hl__foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px 24px; margin-top: clamp(36px, 5vw, 56px); padding-top: 24px; border-top: 1px solid rgb(26 40 65 / .2); }
+
+  .hl__view { width: min(1100px, 94vw); max-height: 92vh; padding: 0; border: 0; border-radius: 14px; background: var(--navy-950); color: var(--cream-300); overflow: hidden; }
+  .hl__view::backdrop { background: rgb(8 13 23 / .82); }
+  /* The viewer image is created by the script, so it needs :global to get these styles. */
+  .hl__viewimg :global(img) { display: block; width: 100%; height: auto; max-height: calc(92vh - 56px); object-fit: contain; background: var(--navy-950); }
+  .hl__viewcap { padding: 14px 18px; font-weight: 600; }
+  .hl__close { position: absolute; top: 10px; right: 10px; z-index: 1; width: 44px; height: 44px; border-radius: 50%; border: 0; background: rgb(13 21 35 / .7); color: var(--cream-300); font-size: 1.5rem; line-height: 1; cursor: pointer; }
+
+  @media (max-width: 1099px) { .hl__head { grid-template-columns: 1fr; } }
+  @media (max-width: 899px) {
+    .hl__grid { grid-template-columns: 1fr; }
+    .hl__frame { aspect-ratio: 4 / 4.4; }
+  }
+  @media (max-width: 479px) { .hl__figs { gap: 10px; } .hl__figs dd { font-size: 2rem; } }
+  @media (prefers-reduced-motion: reduce) { .hl__shot img { transition: none; } .hl__shot:hover img { transform: none; } }
+</style>

@@ -5,7 +5,7 @@ export const course = {
   title: 'Professional MEP Engineering Training',
   code: 'MBI-PET',
   lede:
-    'One course that covers the work our consultancy does every day: HVAC, firefighting and plumbing design, drafted in AutoCAD and modelled in Revit MEP. Taught by the engineers who design those systems on live projects across the GCC.',
+    'One course that covers the design work our consultancy does every day: HVAC, firefighting and plumbing. Taught by the engineers who design those systems on live projects.',
   modules: [
     {
       code: 'M',
@@ -21,16 +21,6 @@ export const course = {
       code: 'P',
       title: 'Plumbing',
       items: ['Water supply and fixture unit calculations', 'Hot water circulation', 'Drainage, sewerage and storm design', 'Tank and booster pump sizing', 'Riser and schematic diagrams'],
-    },
-    {
-      code: 'CAD',
-      title: 'AutoCAD',
-      items: ['MEP drafting standards and layers', 'Layouts, sections and details', 'Shop drawings and builders’ work', 'Sheet setup and issue', 'PDF-to-CAD conversion'],
-    },
-    {
-      code: 'BIM',
-      title: 'Revit MEP',
-      items: ['Templates, families and worksharing', 'Modelling ducts, pipes and equipment', 'Clash detection and coordination', 'Sheets and schedules from the model', 'BIM-based quantity takeoff'],
     },
   ],
 };
@@ -57,12 +47,12 @@ export const internship = {
   lede:
     'For engineering students and fresh graduates who want to work in the GCC. The package combines the full training course with supervised work on project-style deliverables, so you arrive at your first interview with the skills and the portfolio GCC employers ask for.',
   includes: [
-    ['The full training course', 'HVAC, firefighting, plumbing, AutoCAD and Revit MEP.'],
+    ['The full training course', 'HVAC, firefighting and plumbing design.'],
     ['Supervised project work', 'Shop drawings, coordination drawings and BOQs prepared the way our consultancy prepares them.'],
     ['GCC codes in practice', 'How authorities in the UAE, Saudi Arabia and the wider GCC read and approve MEP drawings.'],
     ['Portfolio review', 'A finished set of drawings and calculations you can show employers.'],
     ['CV and interview preparation', 'Technical interview practice for MEP design roles in the GCC.'],
     ['Verifiable certificate', 'An internship certificate with a code employers can check on this site.'],
   ],
-  forWho: ['Final-year mechanical, civil and electrical engineering students', 'Fresh graduates preparing for GCC roles', 'Diploma holders moving into MEP design'],
+  forWho: ['Final-year mechanical engineering students', 'Fresh graduates preparing for GCC roles', 'Diploma holders moving into MEP design'],
 };

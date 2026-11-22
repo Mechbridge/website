@@ -84,7 +84,7 @@ To replace one: export a WebP at the minimum size or larger, name it exactly as 
 | `training-site.webp` | 3/2 | 1800 × 1200 | Engineer in a hard hat checking ductwork on a construction site | in place |
 | `training-review.webp` | 4/3 | 1600 × 1200 | Drawings presented on a screen during a design review | in place |
 | `work-heatload.webp` | 4/3 | 1600 × 1200 | Heat load workbook on a laptop beside a printed floor plan | in place |
-| `work-model.webp` | 4/5 | 1200 × 1500 | Revit MEP model of a plant room | in place |
+| `work-model.webp` | 4/5 | 1200 × 1500 | Engineers reviewing a 3D pump room model on screen | in place |
 | `work-markup.webp` | 4/5 | 1200 × 1500 | Firefighting layout with red review mark-ups | in place |
 | `work-sld.webp` | 4/3 | 1600 × 1200 | Schematic drawings pinned to a wall | in place |
 
@@ -122,3 +122,16 @@ To replace one: export a WebP at the minimum size or larger, name it exactly as 
 |---|---|
 | `hero-home.webp` | Home hero (night boulevard with red-edged towers). Supplied by the user, 1672 × 941. A 2400 px wide version would look sharper on large screens. |
 | `og-default.jpg` | 1200 × 630 share image: the hero crop plus the cream logo and company line. |
+
+## Recent highlights (client photos)
+
+Supplied by Mechbridge on 2026-11-22. Files in `public/images/projects/`: `<id>.webp` (up to 1200px) and `<id>-640.webp`. Captions, alt text and crop positions are in `src/data/projects.ts`.
+
+| Id | Project | What it shows |
+|---|---|---|
+| `jasleena-1` | Jasleena’s Residence | Double-height living room, curved glass balcony, timber staircase |
+| `jasleena-2` | Jasleena’s Residence | Sitting room with crystal chandelier |
+| `jasleena-3` | Jasleena’s Residence | Hallway with timber ceiling feature |
+| `mohammed-1` | Mohammed’s Residence | Bedroom with patterned grey curtains |
+| `mohammed-2` | Mohammed’s Residence | Balcony with wicker chairs |
+| `zangos-1` | Zangos | Restaurant shopfront, 3D visual (cropped from a phone screenshot of the presentation PDF) |

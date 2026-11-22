@@ -1,0 +1,42 @@
+---
+// Instalment payment partners for the training course (Mechbridge is a Tabby and Tamara merchant).
+// Logos: put the official files from each partner's merchant brand kit in public/brand/ as
+// tabby.svg / tamara.svg (or .png / .webp). Until a file is there, the tile shows the name in plain text.
+import fs from 'node:fs';
+import path from 'node:path';
+import { u } from '../lib/url';
+interface Props { class?: string; compact?: boolean }
+const { class: cls = '', compact = false } = Astro.props;
+const dir = path.join(process.cwd(), 'public', 'brand');
+const find = (id: string) => ['svg', 'png', 'webp'].map((e) => `${id}.${e}`).find((f) => fs.existsSync(path.join(dir, f)));
+const partners = [
+  { id: 'tabby', name: 'Tabby' },
+  { id: 'tamara', name: 'Tamara' },
+].map((p) => ({ ...p, file: find(p.id) }));
+---
+<div class={`pay ${compact ? 'pay--compact' : ''} ${cls}`}>
+  {!compact && <h3 class="pay__h">Pay in instalments</h3>}
+  {!compact && <p class="body pay__p">You can pay the course fee in instalments with Tabby or Tamara.</p>}
+  <ul class="pay__logos" aria-label="Instalment payments with">
+    {partners.map((p) => (
+      <li class="pay__tile">
+        {p.file
+          ? <img src={u(`/brand/${p.file}`)} alt={p.name} height="28" loading="lazy" decoding="async" />
+          : <span class="pay__name">{p.name}</span>}
+      </li>
+    ))}
+  </ul>
+</div>
+
+<style>
+  .pay { display: grid; gap: 12px; }
+  .pay__h { font-size: 1.35rem; }
+  .pay__p { color: var(--color-text-muted, var(--navy-100)); }
+  .pay__logos { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 10px; }
+  /* Light tiles so each partner's own logo colours read as intended on any section. */
+  .pay__tile { display: grid; place-items: center; min-width: 120px; height: 52px; padding: 0 18px; border-radius: 12px; background: #fff; border: 1px solid rgb(26 40 65 / .12); }
+  .pay__tile img { display: block; height: 26px; width: auto; max-width: 120px; }
+  .pay__name { font-weight: 700; font-size: 1rem; color: #1A2841; letter-spacing: .01em; }
+  .pay--compact .pay__tile { min-width: 96px; height: 40px; padding: 0 12px; border-radius: 10px; }
+  .pay--compact .pay__tile img { height: 20px; }
+</style>

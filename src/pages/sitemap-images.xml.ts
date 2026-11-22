@@ -11,7 +11,7 @@ const pages: Record<string, { id: string; title: string }[]> = {
   '/': [{ id: 'hero-home', title: 'Mechbridge International MEP Consultants' }, { id: 'home-codes', title: 'Authority-marked MEP drawing set' }, { id: 'home-fire', title: 'Sprinkler valve set in a plant room' }, { id: 'svc-mep', title: 'Coordinated MEP services in a ceiling void' }],
   '/services': [{ id: 'services-hero', title: 'Plant room with chillers, pumps and fire mains' }, ...services.map((s) => ({ id: s.img, title: s.title }))],
   ...Object.fromEntries(services.map((s) => [`/services/${s.slug}`, [{ id: `${s.img}-wide`, title: s.title }, { id: `${s.img}-detail`, title: `${s.title} drawings` }]])),
-  '/training': [{ id: 'training-hero', title: 'Professional MEP Engineering Training' }, { id: 'training-site', title: 'MEP site inspection' }, { id: 'work-model', title: 'Revit MEP plant room model' }],
+  '/training': [{ id: 'training-hero', title: 'Professional MEP Engineering Training' }, { id: 'training-site', title: 'MEP site inspection' }, { id: 'work-model', title: 'Pump room model review' }],
   '/internships': [{ id: 'training-cohort', title: 'GCC-Ready Internship Package' }, { id: 'work-site', title: 'Site visit, exposed ductwork' }],
   '/careers': [{ id: 'careers-hero', title: 'MEP drawing review' }],
   '/about': [{ id: 'about-hero', title: 'Dubai skyline' }, { id: 'about-story-2', title: 'Rooftop plant deck' }],

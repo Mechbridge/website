@@ -33,11 +33,11 @@ A multidisciplinary MEP consultancy specialising in HVAC, firefighting and fire 
 
 ## Operating Context
 
-- Headquarters in Dubai. Operating from Dubai and India. Serving, and hiring in, the six GCC states (UAE, Saudi Arabia, Qatar, Kuwait, Bahrain, Oman) and India. 15+ years in the industry (the only confirmed figure).
+- Headquarters in Dubai (Unbox, World Trade Center). Operating from Dubai and Kozhikode, India (C.M Mathew Brothers Arcade, Edapally Panvel Highway, Vikas Nagar Housing Colony, West Nadakkave, Bilathikkulam, Kozhikode, Kerala 673006). Marketed worldwide with the GCC as the main market, kept implicit. Hiring in the six GCC states and India. 15+ years in the industry, 7,000+ projects completed, projects in 10+ countries (confirmed 2026-11-22).
 - Copy says "GCC", never "Gulf" (user decision, 2026-11-20).
 - Training is delivered online only, but the site never says so outright: no classroom, office or city-based training is advertised, and "live, instructor-led sessions" implies it.
 - The five engineering services and their scope lists come from the company's own service portfolio (pasted by the user, Nov 2026). See `src/data/services.ts`.
-- Training is **one course**: Professional MEP Engineering Training (HVAC, Firefighting, Plumbing, AutoCAD, Revit MEP).
+- Training is **one course**: Professional MEP Engineering Training (HVAC, Firefighting, Plumbing). No AutoCAD, Revit MEP or BIM in the course content, and no mention of electrical or civil streams (user decision, 2026-11-22). Fees can be paid in instalments with Tabby or Tamara (Mechbridge is a merchant partner of both).
 - Internship is a **package**: the full course plus supervised project work, portfolio, interview prep and a certificate.
 - Codes listed (to confirm): UAE Fire & Life Safety Code, Saudi Building Code, NFPA, ASHRAE, SMACNA, UPC, BS EN 12056, Dubai Municipality, Civil Defence, Al Sa'fat, Estidama.
 
@@ -47,7 +47,7 @@ A multidisciplinary MEP consultancy specialising in HVAC, firefighting and fire 
 - Logo and title: Mechbridge International. Company name in text: Mechbridge International MEP Consultants.
 - Roles: superadmin (everything, staff accounts), HR (jobs, internships and their applications), Training (batches, certificates, training enquiries), Sales (proposal, contact and support leads).
 - Certificate codes look like `MBI-YYYY-XXXXXX`. Public verification shows only holder name, programme, title, issue date and status.
-- Undecided: course and internship durations and fees, batch dates, office addresses, the certification or accreditation body. Never invent these.
+- Undecided: course and internship durations and fees, batch dates, the certification or accreditation body. Never invent these.
 
 ## Brand Commitments
 
@@ -61,7 +61,7 @@ A multidisciplinary MEP consultancy specialising in HVAC, firefighting and fire 
 ## Evidence on Hand
 
 - Logo, hero photo, brand tokens, clay background, and 50+ AI-generated illustrative photos (see IMAGE-GENERATION.md; none show real staff or projects).
-- No testimonials, client logos, case studies or project names. Don't fabricate any.
+- No testimonials or client logos. The only named projects are the three "Recent highlights" supplied by Mechbridge: Jasleena’s Residence, Mohammed’s Residence and Zangos. Present them as recent highlights, not as the client list. Don't fabricate any others.
 
 ## Product Principles
 

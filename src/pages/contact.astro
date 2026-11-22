@@ -2,7 +2,7 @@
 import Base from '../layouts/Base.astro';
 import ImageSlot from '../components/ImageSlot.astro';
 import EnquiryForm from '../components/EnquiryForm.astro';
-import { site, offices, servesShort } from '../data/site';
+import { site, offices, servesWorld } from '../data/site';
 ---
 <Base og="contact" breadcrumbs={[['Contact', '/contact']]} jsonLd={[{ '@type': 'ContactPage', url: 'https://mechbridgegroup.com/contact', about: { '@id': 'https://mechbridgegroup.com/#organization' } }]} title="Contact" description="Contact Mechbridge International MEP Consultants for a proposal, training, internships, careers or support. connect@mechbridgegroup.com and support@mechbridgegroup.com.">
   <section class="ch" data-enter aria-labelledby="ch-h">
@@ -38,13 +38,14 @@ import { site, offices, servesShort } from '../data/site';
   <section class="section g-cream theme-cream" aria-labelledby="co-h">
     <div class="wrap">
       <h2 id="co-h" class="co__h" data-split>Headquartered in Dubai, operating from Dubai and India.</h2>
-      <div class="co__serves"><p class="mono co__k">Serving</p><ul class="chips" aria-label="Countries we serve">{servesShort.map((c) => <li>{c}</li>)}</ul></div>
+      <div class="co__serves"><p class="mono co__k">Serving</p><ul class="chips" aria-label="Where we work">{servesWorld.map((c) => <li>{c}</li>)}</ul></div>
       <ul class="co">
         {offices.map((o) => (
           <li>
             <ImageSlot id={`${o.img}-contact`} ratio="4 / 3" alt={`${o.city} office`} label={`${o.city}: office exterior or street`} />
-            <h3>{o.city}</h3>
+            <h3>{o.label}</h3>
             <p class="mono co__role">{o.role}</p>
+            <address class="body co__addr">{o.address.map((l) => <span>{l}</span>)}</address>
             <p class="body">{o.note}</p>
           </li>
         ))}
@@ -73,6 +74,7 @@ import { site, offices, servesShort } from '../data/site';
   .mail:hover .mail__v { color: var(--red-300); }
 
   .co__h { margin-bottom: 24px; }
+  .co__addr { font-style: normal; display: grid; margin: 6px 0 10px; }
   .co__serves { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; margin-bottom: clamp(36px, 5vw, 56px); }
   .co__k { color: var(--navy-400); font-size: var(--t-micro); text-transform: uppercase; letter-spacing: .1em; }
   .co__serves .chips li { border-color: rgb(26 40 65 / .25); }

@@ -216,8 +216,8 @@ export const services: Service[] = [
 
 export const trainingOffering = {
   title: 'Professional Engineering Training',
-  short: 'One course covering HVAC, firefighting, plumbing, AutoCAD and Revit MEP, taught by our engineers.',
-  highlights: ['HVAC', 'Firefighting', 'Plumbing', 'AutoCAD', 'Revit MEP'],
+  short: 'One course in HVAC, firefighting and plumbing design, taught by our engineers.',
+  highlights: ['HVAC', 'Firefighting', 'Plumbing'],
 };
 
 export const serviceBySlug = (slug: string) => services.find((s) => s.slug === slug);
