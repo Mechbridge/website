@@ -7,7 +7,7 @@ import EnquiryForm from '../../components/EnquiryForm.astro';
 import Arrow from '../../components/Arrow.astro';
 import PayPartners from '../../components/PayPartners.astro';
 import { course, compare, steps } from '../../data/course';
-import { site } from '../../data/site';
+import { site, track } from '../../data/site';
 
 const faqs = [
   ['Do I need work experience?', 'No. The course suits final-year students and fresh graduates in mechanical engineering, and working engineers who want to move into MEP design. A short skills check puts you at the right level.'],
@@ -49,7 +49,7 @@ const trainingLd = [
   breadcrumbs={[['Training', '/training']]}
   jsonLd={trainingLd}
   title="Professional MEP Engineering Training"
-  description="One course in HVAC, firefighting and plumbing design, taught by engineers from Mechbridge International MEP Consultants. Live, instructor-led sessions, a verifiable certificate, and instalments with Tabby or Tamara."
+  description="One course in HVAC, firefighting and plumbing design, taught by engineers from Mechbridge International MEP Consultants to more than 3,000 students so far. Live, instructor-led sessions, a verifiable certificate, and instalments with Tabby or Tamara."
 >
   <section class="t-hero" data-enter aria-labelledby="t-hero-h">
     <div class="wrap t-hero__grid">
@@ -64,6 +64,7 @@ const trainingLd = [
       <div class="t-hero__media" data-enter-item>
         <ImageSlot id="training-hero" ratio="4 / 5" alt="Instructor explaining a large printed MEP drawing to a small group" label="Instructor at a printed MEP drawing" eager />
         <div class="t-hero__block glass">
+          <div class="tblock__row"><span class="tblock__k">Students trained</span><span class="tblock__v">{track.students}</span></div>
           <div class="tblock__row"><span class="tblock__k">Modules</span><span class="tblock__v">{course.modules.map((m) => m.title).join(' · ')}</span></div>
           <div class="tblock__row"><span class="tblock__k">Sessions</span><span class="tblock__v">Live, instructor-led</span></div>
           <div class="tblock__row"><span class="tblock__k">Certificate</span><a class="tblock__v t-verify" href={u('/verify')}>Verifiable online</a></div>
@@ -91,7 +92,7 @@ const trainingLd = [
     <div class="wrap">
       <div class="mod-head">
         <h2 id="mod-h" data-split>Three modules, one drawing set.</h2>
-        <p class="body">Each module ends with drawings and calculations you hand in for review. By the last one you have a complete MEP set for one building.</p>
+        <p class="body">More than {track.students.replace('+', '')} students have trained with us so far. Each module ends with drawings and calculations you hand in for review. By the last one you have a complete MEP set for one building.</p>
       </div>
       <ol class="mods">
         {course.modules.map((m) => (

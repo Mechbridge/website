@@ -38,7 +38,7 @@ export const gcc = ['United Arab Emirates', 'Saudi Arabia', 'Qatar', 'Kuwait', '
 export const serves = [...gcc, 'India'];
 export const servesShort = ['UAE', 'Saudi Arabia', 'Qatar', 'Kuwait', 'Bahrain', 'Oman', 'India'];
 export const servesWorld = [...servesShort, 'Worldwide'];
-export const track = { projects: '7,000+', countries: '10+' }; // confirmed by Mechbridge, November 2026
+export const track = { projects: '20+', countries: '10+', students: '3,000+' }; // confirmed by Mechbridge, November 2026
 
 export interface NavItem { href: string; label: string; children?: { href: string; label: string; note?: string }[] }
 export const nav: NavItem[] = [

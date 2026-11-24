@@ -25,7 +25,7 @@ The site doesn't invent numbers, names or credentials. These items are missing, 
 ## Confirmed by you
 
 - Logo and title: Mechbridge International. Company name: Mechbridge International MEP Consultants. Domain: mechbridgegroup.com.
-- 15+ years in the industry, 7,000+ projects completed, projects in 10+ countries. Headquarters at Unbox, World Trade Center, Dubai; operations office in Kozhikode, Kerala, India (full address in `src/data/site.ts`). Hiring in the UAE, Saudi Arabia, Qatar, Kuwait, Bahrain, Oman and India.
+- 15+ years in the industry, 20+ projects completed, projects in 10+ countries, 3,000+ students trained. Headquarters at Unbox, World Trade Center, Dubai; operations office in Kozhikode, Kerala, India (full address in `src/data/site.ts`). Hiring in the UAE, Saudi Arabia, Qatar, Kuwait, Bahrain, Oman and India.
 - Recent highlights: Jasleena’s Residence, Mohammed’s Residence, Zangos (photos supplied 2026-11-22).
 - connect@, support@, careers@ and intern@mechbridgegroup.com.
 - Training is online-only in practice and never advertised as offline.

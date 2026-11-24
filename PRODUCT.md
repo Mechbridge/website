@@ -33,7 +33,7 @@ A multidisciplinary MEP consultancy specialising in HVAC, firefighting and fire 
 
 ## Operating Context
 
-- Headquarters in Dubai (Unbox, World Trade Center). Operating from Dubai and Kozhikode, India (C.M Mathew Brothers Arcade, Edapally Panvel Highway, Vikas Nagar Housing Colony, West Nadakkave, Bilathikkulam, Kozhikode, Kerala 673006). Marketed worldwide with the GCC as the main market, kept implicit. Hiring in the six GCC states and India. 15+ years in the industry, 7,000+ projects completed, projects in 10+ countries (confirmed 2026-11-22).
+- Headquarters in Dubai (Unbox, World Trade Center). Operating from Dubai and Kozhikode, India (C.M Mathew Brothers Arcade, Edapally Panvel Highway, Vikas Nagar Housing Colony, West Nadakkave, Bilathikkulam, Kozhikode, Kerala 673006). Marketed worldwide with the GCC as the main market, kept implicit. Hiring in the six GCC states and India. 15+ years in the industry, 20+ projects completed, projects in 10+ countries, 3,000+ students trained (confirmed 2026-11-24).
 - Copy says "GCC", never "Gulf" (user decision, 2026-11-20).
 - Training is delivered online only, but the site never says so outright: no classroom, office or city-based training is advertised, and "live, instructor-led sessions" implies it.
 - The five engineering services and their scope lists come from the company's own service portfolio (pasted by the user, Nov 2026). See `src/data/services.ts`.
