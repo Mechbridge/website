@@ -400,7 +400,7 @@ From now on, manage mailboxes in the **staff portal → Mailboxes** (superadmin 
 
 Forwarding addresses (postmaster@, info@ and the rest) stay in `/etc/postfix/virtual`. After editing that file run `sudo postfix reload`.
 
-Send a test lead alert: submit the contact form on the website, then check connect@ in webmail (Step 8). The alert is a navy and cream branded email with a button that opens the lead in the staff portal. If it doesn't arrive, look in `sudo tail -n 50 /var/log/mail.log` and `sudo journalctl -u mechbridge -n 50`.
+Send a test lead alert: submit the contact form on the website, then check connect@ in webmail (Step 8). The alert is a navy and cream branded email with the enquiry details, any uploaded CV or ID attached, and Reply and Call buttons. If it doesn't arrive, look in `sudo tail -n 50 /var/log/mail.log` and `sudo journalctl -u mechbridge -n 50`.
 
 ## Step 8. Roundcube webmail
 

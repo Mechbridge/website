@@ -1,12 +1,17 @@
 // Email alert for new leads, in the Mechbridge brand. Active only when SMTP_HOST is set; leads are stored either way.
 // The HTML uses tables and inline styles because email clients (Outlook, Gmail) ignore stylesheets.
+// Uploaded documents (CV, degree certificate or college ID) travel as attachments, so the email is complete on its own.
 import nodemailer, { type Transporter } from 'nodemailer';
+import { existsSync } from 'node:fs';
+import path from 'node:path';
+import { dataDir } from './core.mjs';
 
 let transport: Transporter | null = null;
 
 export interface LeadAlert {
   id: number; type: string; label: string; name: string; email: string; phone: string; country: string;
   subject: string; ref_title: string; message: string; cv_name: string; id_doc_name?: string;
+  cv_path?: string; id_doc_path?: string; // stored file names in DATA_DIR/uploads
   extra?: [string, string][]; // topic-specific details, already labelled
 }
 
@@ -15,7 +20,6 @@ const esc = (s: string) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, 
 const nl2br = (s: string) => esc(s).replace(/\r?\n/g, '<br>');
 
 export function leadEmailHtml(l: LeadAlert, site: string) {
-  const portal = `${site}/admin/#/leads?open=${l.id}`;
   const replySubject = encodeURIComponent(`Re: your enquiry to Mechbridge International`);
   const rows: [string, string][] = [
     ['Name', esc(l.name)],
@@ -25,8 +29,8 @@ export function leadEmailHtml(l: LeadAlert, site: string) {
     ...(l.ref_title ? [['For', esc(l.ref_title)] as [string, string]] : []),
     ...(l.subject ? [['Service', esc(l.subject)] as [string, string]] : []),
     ...(l.extra ?? []).map(([k, v]) => [esc(k), esc(v)] as [string, string]),
-    ...(l.cv_name ? [['CV', `${esc(l.cv_name)} <span style="color:${C.muted};">(download it in the staff portal)</span>`] as [string, string]] : []),
-    ...(l.id_doc_name ? [['Degree or ID', `${esc(l.id_doc_name)} <span style="color:${C.muted};">(download it in the staff portal)</span>`] as [string, string]] : []),
+    ...(l.cv_name ? [['CV', `${esc(l.cv_name)} <span style="color:${C.muted};">(attached)</span>`] as [string, string]] : []),
+    ...(l.id_doc_name ? [['Degree or ID', `${esc(l.id_doc_name)} <span style="color:${C.muted};">(attached)</span>`] as [string, string]] : []),
   ];
   const rowHtml = rows.map(([k, v]) => `
     <tr>
@@ -58,9 +62,9 @@ export function leadEmailHtml(l: LeadAlert, site: string) {
         </td></tr>
         <tr><td style="background:${C.paper};padding:22px 28px 30px;">
           <table role="presentation" cellpadding="0" cellspacing="0"><tr>
-            <td style="background:${C.red};border-radius:6px;"><a href="${portal}" style="display:inline-block;padding:13px 22px;font:700 14px/1 Arial,Helvetica,sans-serif;color:${C.cream};text-decoration:none;">Open in staff portal</a></td>
-            <td style="width:10px;"></td>
-            <td style="border:1px solid ${C.navy};border-radius:6px;"><a href="mailto:${esc(l.email)}?subject=${replySubject}" style="display:inline-block;padding:12px 20px;font:700 14px/1 Arial,Helvetica,sans-serif;color:${C.navy};text-decoration:none;">Reply to ${esc(l.name.split(' ')[0] || 'them')}</a></td>
+            <td style="background:${C.red};border-radius:6px;"><a href="mailto:${esc(l.email)}?subject=${replySubject}" style="display:inline-block;padding:13px 22px;font:700 14px/1 Arial,Helvetica,sans-serif;color:${C.cream};text-decoration:none;">Reply to ${esc(l.name.split(' ')[0] || 'them')}</a></td>
+            ${l.phone ? `<td style="width:10px;"></td>
+            <td style="border:1px solid ${C.navy};border-radius:6px;"><a href="tel:${esc(l.phone.replace(/[^\d+]/g, ''))}" style="display:inline-block;padding:12px 20px;font:700 14px/1 Arial,Helvetica,sans-serif;color:${C.navy};text-decoration:none;">Call ${esc(l.phone)}</a></td>` : ''}
           </tr></table>
         </td></tr>
         <tr><td style="background:${C.navy};padding:16px 28px;border-radius:0 0 12px 12px;font:12px/1.5 Arial,Helvetica,sans-serif;color:#9BA7BE;">
@@ -77,8 +81,8 @@ export function leadEmailText(l: LeadAlert, site: string) {
   return [
     `${l.label} #${l.id}`, '',
     `Name: ${l.name}`, `Email: ${l.email}`,
-    ...opt('Phone', l.phone), ...opt('Based in', l.country), ...opt('For', l.ref_title), ...opt('Service', l.subject), ...(l.extra ?? []).flatMap(([k, v]) => opt(k, v)), ...opt('CV attached', l.cv_name), ...opt('Degree certificate or college ID', l.id_doc_name ?? ''),
-    '', l.message, '', `Open it in the staff portal: ${site}/admin/#/leads?open=${l.id}`,
+    ...opt('Phone', l.phone), ...opt('Based in', l.country), ...opt('For', l.ref_title), ...opt('Service', l.subject), ...(l.extra ?? []).flatMap(([k, v]) => opt(k, v)), ...opt('CV (attached)', l.cv_name), ...opt('Degree certificate or college ID (attached)', l.id_doc_name ?? ''),
+    '', l.message, '', `Sent by the website contact forms at ${site.replace(/^https?:\/\//, '')}. Replying to this email replies to ${l.name}.`,
   ].join('\n');
 }
 
@@ -99,6 +103,11 @@ export async function notifyLead(l: LeadAlert) {
     job: process.env.CAREERS_NOTIFY_TO || 'careers@mechbridgegroup.com',
     internship: process.env.INTERN_NOTIFY_TO || 'intern@mechbridgegroup.com',
   };
+  // Attach the uploaded documents. A missing file is left out rather than stopping the alert.
+  const attachments = ([[l.cv_path, l.cv_name], [l.id_doc_path, l.id_doc_name]] as [string | undefined, string | undefined][])
+    .filter(([p]) => !!p)
+    .map(([p, name]) => ({ filename: String(name || path.basename(p!)).replace(/[\r\n"]/g, '_'), path: path.join(dataDir(), 'uploads', path.basename(p!)) }))
+    .filter((a) => existsSync(a.path));
   await transport.sendMail({
     from: process.env.SMTP_FROM || `Mechbridge website <no-reply@mechbridgegroup.com>`,
     to: to[l.type] || process.env.LEAD_NOTIFY_TO || 'connect@mechbridgegroup.com',
@@ -106,5 +115,6 @@ export async function notifyLead(l: LeadAlert) {
     subject: `${l.label}: ${l.name}${l.country ? ` (${l.country})` : ''}`,
     text: leadEmailText(l, site),
     html: leadEmailHtml(l, site),
+    attachments,
   });
 }
