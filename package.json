@@ -10,7 +10,8 @@
     "start": "node --disable-warning=ExperimentalWarning dist/server/entry.mjs",
     "build:demo": "node scripts/build-demo.mjs",
     "deploy:pages": "node scripts/deploy-pages.mjs",
-    "admin:create": "node --disable-warning=ExperimentalWarning scripts/admin-create.mjs"
+    "admin:create": "node --disable-warning=ExperimentalWarning scripts/admin-create.mjs",
+    "logos": "node scripts/make-logos.mjs"
   },
   "dependencies": {
     "@astrojs/node": "^9.5.5",
@@ -25,6 +26,8 @@
     "qrcode": "^1.5.4"
   },
   "devDependencies": {
+    "@fontsource/geist-mono": "^5.3.0",
+    "@fontsource/geist-sans": "^5.3.0",
     "@types/nodemailer": "^8.0.2",
     "@types/qrcode": "^1.5.6"
   },

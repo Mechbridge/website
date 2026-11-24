@@ -9,6 +9,7 @@ import { notifyLead } from './notify';
 import { MailError, listMailboxes, createMailbox, setMailboxPassword, deleteMailbox, setMailboxName, saveWebmailSettings } from './mail';
 import type { LeadType, LeadFilter, LeadStatus, LeadUpdate, PostingKind, PostingStatus, Role, User, PostingInput, CertificateInput } from '../lib/api/types';
 import { CERT_DETAIL_FIELDS } from '../lib/api/types';
+import { DOCUMENTS, readDetails, detailLabel } from '../lib/lead-fields';
 import { canManageCertificates, canManageMailboxes, canManageUsers, cleanPerms, leadTypesFor, postingKindsFor, LEAD_TYPE_LABELS, LEAD_STATUSES, POSTING_STATUSES } from '../lib/roles';
 
 export const prerender = false;
@@ -154,23 +155,29 @@ async function handle(ctx: APIContext, parts: string[], method: string): Promise
       type, name: str(fd.get('name'), 120), email: str(fd.get('email'), 160), phone: str(fd.get('phone'), 40),
       country: str(fd.get('country'), 80), subject: str(fd.get('subject'), 200), message: str(fd.get('message'), 5000),
       ref_id: null as number | null, ref_title: '', cv_name: '', cv_path: '', id_doc_name: '', id_doc_path: '',
+      details: readDetails(type, (k) => fd.get(k)),
     };
+    // The service choice only belongs to proposal requests.
+    if (type !== 'consultancy') lead.subject = '';
     if (!lead.name) fail(400, 'Add your name.');
     if (!isEmail(lead.email)) fail(400, 'Enter an email address we can reply to.');
-    if (!phoneOk(lead.phone)) fail(400, 'Add a phone or WhatsApp number with the country code, like +971 50 123 4567.');
+    if (!phoneOk(lead.phone)) fail(400, 'Add a mobile or WhatsApp number with the country code, like +971 50 123 4567.');
     if (lead.message.length < 10) fail(400, 'Tell us a little more, at least a sentence.');
     const refId = Number(fd.get('ref_id'));
     if (refId) { const p = D.getPosting(refId); if (p) { lead.ref_id = p.id; lead.ref_title = p.title; } }
+    // Documents follow the topic (src/lib/lead-fields.ts): files sent for any other topic are ignored.
     // Check every file before saving any, so a rejected form leaves nothing behind.
+    const docs = DOCUMENTS[type];
     const cv = fd.get('cv');
-    const hasCv = cv instanceof File && cv.size > 0;
+    const hasCv = !!docs.cv && cv instanceof File && cv.size > 0;
+    if (docs.cv === 'required' && !hasCv) fail(400, 'Attach your CV.');
     if (hasCv) {
-      if (!CV_EXT.includes(path.extname(cv.name).toLowerCase())) fail(400, 'Attach your CV as a PDF or Word file.');
-      if (cv.size > CV_MAX) fail(400, 'Your CV is over 5 MB. Attach a smaller file.');
+      if (!CV_EXT.includes(path.extname((cv as File).name).toLowerCase())) fail(400, 'Attach your CV as a PDF or Word file.');
+      if ((cv as File).size > CV_MAX) fail(400, 'Your CV is over 5 MB. Attach a smaller file.');
     }
     const idDoc = fd.get('id_doc');
-    const hasIdDoc = type === 'internship' && idDoc instanceof File && idDoc.size > 0;
-    if (type === 'internship') {
+    const hasIdDoc = !!docs.idDoc && idDoc instanceof File && idDoc.size > 0;
+    if (docs.idDoc) {
       if (!hasIdDoc) fail(400, 'Attach your degree certificate or college ID.');
       if (!ID_EXT.includes(path.extname((idDoc as File).name).toLowerCase())) fail(400, 'Attach the degree certificate or college ID as a PDF or a photo (JPG or PNG).');
       if ((idDoc as File).size > CV_MAX) fail(400, 'The degree certificate or college ID is over 5 MB. Attach a smaller file.');
@@ -178,7 +185,7 @@ async function handle(ctx: APIContext, parts: string[], method: string): Promise
     if (hasCv) { lead.cv_path = await saveUpload(cv as File, path.extname((cv as File).name).toLowerCase()); lead.cv_name = (cv as File).name.slice(0, 160); }
     if (hasIdDoc) { lead.id_doc_path = await saveUpload(idDoc as File, path.extname((idDoc as File).name).toLowerCase()); lead.id_doc_name = (idDoc as File).name.slice(0, 160); }
     const id = D.createLead(lead);
-    notifyLead({ ...lead, id, label: LEAD_TYPE_LABELS[type] }).catch((e) => console.error('[notify]', e.message));
+    notifyLead({ ...lead, id, label: LEAD_TYPE_LABELS[type], extra: Object.entries(lead.details).map(([k, v]) => [detailLabel(type, k), v]) }).catch((e) => console.error('[notify]', e.message));
     return json({ ok: true, id }, 201);
   }
 
@@ -227,8 +234,9 @@ async function handle(ctx: APIContext, parts: string[], method: string): Promise
       if (c === 'countries' && method === 'GET') return json(D.leadCountries(types));
       if (c === 'export.csv' && method === 'GET') {
         const rows = D.exportLeads(types, leadFilter(sp), u.id);
-        const cols = ['id', 'created_at', 'updated_at', 'type', 'status', 'name', 'email', 'phone', 'country', 'subject', 'ref_title', 'assigned_name', 'distributed_to', 'distributed_at', 'message', 'notes', 'cv_name', 'id_doc_name'];
-        return csv(`mechbridge-leads-${today()}.csv`, cols, rows);
+        const cols = ['id', 'created_at', 'updated_at', 'type', 'status', 'name', 'email', 'phone', 'country', 'subject', 'ref_title', 'assigned_name', 'distributed_to', 'distributed_at', 'message', 'notes', 'cv_name', 'id_doc_name', 'details'];
+        const flat = rows.map((r) => ({ ...r, details: Object.entries(r.details).map(([k, v]) => `${detailLabel(r.type, k)}: ${v}`).join('; ') }));
+        return csv(`mechbridge-leads-${today()}.csv`, cols, flat);
       }
       if (c === 'bulk' && method === 'POST') {
         const x = await body(ctx);

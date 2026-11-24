@@ -173,6 +173,10 @@ const MIGRATIONS = [
   ALTER TABLE leads ADD COLUMN id_doc_name TEXT NOT NULL DEFAULT '';
   ALTER TABLE leads ADD COLUMN id_doc_path TEXT NOT NULL DEFAULT '';
   `,
+  // v5: topic-specific details from the enquiry form (company, college, experience...), as JSON.
+  `
+  ALTER TABLE leads ADD COLUMN details TEXT NOT NULL DEFAULT '{}';
+  `,
 ];
 
 function migrate(db) {

@@ -7,6 +7,7 @@ let transport: Transporter | null = null;
 export interface LeadAlert {
   id: number; type: string; label: string; name: string; email: string; phone: string; country: string;
   subject: string; ref_title: string; message: string; cv_name: string; id_doc_name?: string;
+  extra?: [string, string][]; // topic-specific details, already labelled
 }
 
 const C = { navy: '#1A2841', navyDeep: '#0D1523', cream: '#F0E1CE', paper: '#FBF8F3', red: '#B11722', ink: '#0C1018', muted: '#5B6A86', line: '#E4CDB0' };
@@ -23,6 +24,7 @@ export function leadEmailHtml(l: LeadAlert, site: string) {
     ...(l.country ? [['Based in', esc(l.country)] as [string, string]] : []),
     ...(l.ref_title ? [['For', esc(l.ref_title)] as [string, string]] : []),
     ...(l.subject ? [['Service', esc(l.subject)] as [string, string]] : []),
+    ...(l.extra ?? []).map(([k, v]) => [esc(k), esc(v)] as [string, string]),
     ...(l.cv_name ? [['CV', `${esc(l.cv_name)} <span style="color:${C.muted};">(download it in the staff portal)</span>`] as [string, string]] : []),
     ...(l.id_doc_name ? [['Degree or ID', `${esc(l.id_doc_name)} <span style="color:${C.muted};">(download it in the staff portal)</span>`] as [string, string]] : []),
   ];
@@ -75,7 +77,7 @@ export function leadEmailText(l: LeadAlert, site: string) {
   return [
     `${l.label} #${l.id}`, '',
     `Name: ${l.name}`, `Email: ${l.email}`,
-    ...opt('Phone', l.phone), ...opt('Based in', l.country), ...opt('For', l.ref_title), ...opt('Service', l.subject), ...opt('CV attached', l.cv_name), ...opt('Degree certificate or college ID', l.id_doc_name ?? ''),
+    ...opt('Phone', l.phone), ...opt('Based in', l.country), ...opt('For', l.ref_title), ...opt('Service', l.subject), ...(l.extra ?? []).flatMap(([k, v]) => opt(k, v)), ...opt('CV attached', l.cv_name), ...opt('Degree certificate or college ID', l.id_doc_name ?? ''),
     '', l.message, '', `Open it in the staff portal: ${site}/admin/#/leads?open=${l.id}`,
   ].join('\n');
 }

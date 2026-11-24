@@ -1,23 +1,25 @@
 ---
 // One form for every lead: proposals, training, internships, job applications and support.
 // Posts through the client API: /api/leads on the VPS, localStorage in the GitHub demo.
+// What each topic asks for (extra details and documents) comes from src/lib/lead-fields.ts. Fields for other
+// topics are hidden and disabled, so they are neither shown nor sent. Name, email, mobile and message are always required.
 import Arrow from './Arrow.astro';
 import { site } from '../data/site';
 import { services } from '../data/services';
 import type { LeadType } from '../lib/api/types';
+import { DETAIL_FIELDS, DOCUMENTS, type DetailField } from '../lib/lead-fields';
 
 interface Props {
   id?: string;
   type?: LeadType;
   types?: LeadType[]; // topics offered in the selector; one entry hides the selector
   submit?: string;
-  cv?: boolean; // show CV upload (job and internship applications)
   refId?: string; // posting id, set by script for careers/internship pages
   serviceSelect?: boolean; // show "which service" for proposals
   service?: string; // preselected service title
   mail?: string; // address shown as the email alternative (defaults to connect@)
 }
-const { id = 'enquiry', type = 'consultancy', types = ['consultancy', 'training', 'internship', 'job', 'support', 'contact'], submit = 'Send', cv = false, refId = '', serviceSelect = false, service = '', mail = site.connect } = Astro.props;
+const { id = 'enquiry', type = 'consultancy', types = ['consultancy', 'training', 'internship', 'job', 'support', 'contact'], submit = 'Send', refId = '', serviceSelect = false, service = '', mail = site.connect } = Astro.props;
 const MAIL_FOR: Partial<Record<LeadType, string>> = { support: site.support, job: site.careers, internship: site.intern };
 const LABELS: Record<LeadType, string> = {
   consultancy: 'Request a proposal',
@@ -27,8 +29,18 @@ const LABELS: Record<LeadType, string> = {
   support: 'Support for an existing project',
   contact: 'Something else',
 };
+// Detail fields for the topics on this form, each shown only for the topics that use it.
+const details = new Map<string, DetailField & { for: LeadType[] }>();
+for (const t of types) for (const f of DETAIL_FIELDS[t]) {
+  const prev = details.get(f.key);
+  prev ? prev.for.push(t) : details.set(f.key, { ...f, for: [t] });
+}
+const cvFor = types.filter((t) => DOCUMENTS[t].cv);
+const idDocFor = types.filter((t) => DOCUMENTS[t].idDoc);
+const docRules = Object.fromEntries(types.map((t) => [t, DOCUMENTS[t]]));
+const pairs = (list: (DetailField & { for: LeadType[] })[]) => list.reduce<(typeof list)[]>((rows, f, i) => (i % 2 ? rows[rows.length - 1].push(f) : rows.push([f]), rows), []);
 ---
-<form class="form" id={id} data-enquiry data-mailto={mail} data-mail-for={JSON.stringify(MAIL_FOR)} novalidate>
+<form class="form" id={id} data-enquiry data-mailto={mail} data-mail-for={JSON.stringify(MAIL_FOR)} data-docs={JSON.stringify(docRules)} novalidate>
   <input type="hidden" name="ref_id" value={refId} data-ref />
   {types.length > 1 ? (
     <div class="field">
@@ -52,6 +64,11 @@ const LABELS: Record<LeadType, string> = {
   </div>
   <div class="form__row">
     <div class="field">
+      <label for={`${id}-phone`}>Mobile or WhatsApp</label>
+      <input id={`${id}-phone`} name="phone" type="tel" autocomplete="tel" inputmode="tel" placeholder="+971 50 123 4567" required aria-describedby={`${id}-phone-err`} />
+      <p class="err" id={`${id}-phone-err`} aria-live="polite"></p>
+    </div>
+    <div class="field">
       <label for={`${id}-country`}>Where are you based?</label>
       <select id={`${id}-country`} name="country" autocomplete="country-name">
         <option>United Arab Emirates</option>
@@ -64,13 +81,20 @@ const LABELS: Record<LeadType, string> = {
         <option>Somewhere else</option>
       </select>
     </div>
-    <div class="field">
-      <label for={`${id}-phone`}>Phone or WhatsApp</label>
-      <input id={`${id}-phone`} name="phone" type="tel" autocomplete="tel" inputmode="tel" placeholder="+971 50 123 4567" required aria-describedby={`${id}-phone-err`} />
-      <p class="err" id={`${id}-phone-err`} aria-live="polite"></p>
-    </div>
   </div>
-  {serviceSelect && (
+  {pairs([...details.values()]).map((row) => (
+    <div class="form__row" data-detail-row>
+      {row.map((f) => (
+        <div class="field" data-show-for={f.for.join(' ')}>
+          <label for={`${id}-d-${f.key}`}>{f.label} <span class="hint">(optional)</span></label>
+          {f.options
+            ? <select id={`${id}-d-${f.key}`} name={`d_${f.key}`}><option value="">Choose</option>{f.options.map((o) => <option>{o}</option>)}</select>
+            : <input id={`${id}-d-${f.key}`} name={`d_${f.key}`} maxlength="160" placeholder={f.placeholder ?? ''} />}
+        </div>
+      ))}
+    </div>
+  ))}
+  {serviceSelect && types.includes('consultancy') && (
     <div class="field" data-show-for="consultancy">
       <label for={`${id}-subject`}>Which service?</label>
       <select id={`${id}-subject`} name="subject">
@@ -84,18 +108,18 @@ const LABELS: Record<LeadType, string> = {
     <textarea id={`${id}-msg`} name="message" required aria-describedby={`${id}-msg-err`} data-msg></textarea>
     <p class="err" id={`${id}-msg-err`} aria-live="polite"></p>
   </div>
-  {cv && (
-    <div class="field" data-show-for="job internship">
-      <label for={`${id}-cv`}>CV <span class="hint">(PDF or Word, up to 5 MB, optional)</span></label>
-      <input id={`${id}-cv`} name="cv" type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" aria-describedby={`${id}-cv-err`} />
-      <p class="err" id={`${id}-cv-err`} aria-live="polite"></p>
-    </div>
-  )}
-  {types.includes('internship') && (
-    <div class="field" data-show-for="internship">
+  {idDocFor.length > 0 && (
+    <div class="field" data-show-for={idDocFor.join(' ')}>
       <label for={`${id}-iddoc`}>Degree certificate or college ID <span class="hint">(PDF or photo, up to 5 MB, required)</span></label>
       <input id={`${id}-iddoc`} name="id_doc" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp" aria-describedby={`${id}-iddoc-err`} />
       <p class="err" id={`${id}-iddoc-err`} aria-live="polite"></p>
+    </div>
+  )}
+  {cvFor.length > 0 && (
+    <div class="field" data-show-for={cvFor.join(' ')}>
+      <label for={`${id}-cv`}>CV <span class="hint" data-cv-hint>(PDF or Word, up to 5 MB)</span></label>
+      <input id={`${id}-cv`} name="cv" type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" aria-describedby={`${id}-cv-err`} />
+      <p class="err" id={`${id}-cv-err`} aria-live="polite"></p>
     </div>
   )}
   <input type="checkbox" name="botcheck" class="sr-only" tabindex="-1" autocomplete="off" aria-hidden="true" />
@@ -111,24 +135,39 @@ const LABELS: Record<LeadType, string> = {
   .form__alt .link { min-height: 0; }
   input[type="file"] { padding: 12px; min-height: 52px; }
   input[type="file"]::file-selector-button { font: inherit; font-weight: 600; margin-right: 12px; padding: 8px 14px; border-radius: var(--radius); border: 1px solid var(--color-border-strong); background: var(--color-surface-raised); color: var(--color-text); cursor: pointer; }
+  /* .field sets display: grid, which would otherwise override the hidden attribute. */
+  [data-show-for][hidden], [data-detail-row][hidden] { display: none; }
 </style>
 
 <script>
   import { api } from '../lib/api/client';
   const PLACEHOLDERS: Record<string, string> = {
-    consultancy: 'The project, its location and stage, and the services you need.',
+    consultancy: 'The project, its stage and the services you need.',
     training: 'Your background and when you would like to start.',
-    internship: 'Your degree, year of study and when you can start.',
+    internship: 'What you are studying and when you can start.',
     job: 'The role you are applying for and a short note on your experience.',
-    support: 'The project name and what you need from us.',
+    support: 'What you need from us.',
     contact: 'How can we help?',
   };
+  const MB5 = 5 * 1024 * 1024;
   document.querySelectorAll<HTMLFormElement>('form[data-enquiry]').forEach((form) => {
     const status = form.querySelector<HTMLElement>('[data-status]')!;
     const type = form.querySelector<HTMLInputElement | HTMLSelectElement>('[data-type]')!;
     const msg = form.querySelector<HTMLTextAreaElement>('[data-msg]')!;
+    const docs = JSON.parse(form.dataset.docs || '{}') as Record<string, { cv?: 'required' | 'optional'; idDoc?: boolean }>;
+    const rules = () => docs[type.value] ?? {};
+
+    // Show only the fields for the chosen topic. Hidden fields are also disabled, so they are not sent.
     const sync = () => {
-      form.querySelectorAll<HTMLElement>('[data-show-for]').forEach((el) => { el.hidden = !el.dataset.showFor!.split(' ').includes(type.value); });
+      form.querySelectorAll<HTMLElement>('[data-show-for]').forEach((el) => {
+        const on = el.dataset.showFor!.split(' ').includes(type.value);
+        el.hidden = !on;
+        el.querySelectorAll<HTMLInputElement | HTMLSelectElement>('input, select, textarea').forEach((c) => { c.disabled = !on; });
+        if (!on) el.querySelectorAll<HTMLElement>('.err').forEach((e) => { e.textContent = ''; });
+      });
+      form.querySelectorAll<HTMLElement>('[data-detail-row]').forEach((row) => { row.hidden = !row.querySelector('[data-show-for]:not([hidden])'); });
+      const hint = form.querySelector<HTMLElement>('[data-cv-hint]');
+      if (hint) hint.textContent = `(PDF or Word, up to 5 MB, ${rules().cv === 'required' ? 'required' : 'optional'})`;
       msg.placeholder = PLACEHOLDERS[type.value] ?? '';
       // The email alternative follows the topic: careers@, intern@, support@ or the page default.
       const alt = form.querySelector<HTMLAnchorElement>('[data-alt-mail]');
@@ -148,26 +187,21 @@ const LABELS: Record<LeadType, string> = {
       if (err) err.textContent = text;
       return !text;
     };
+    const fileMsg = (f: FormDataEntryValue | null, need: boolean, ext: RegExp, missing: string, wrongType: string) =>
+      !(f instanceof File) || !f.size ? (need ? missing : '') : !ext.test(f.name) ? wrongType : f.size > MB5 ? 'The file is over 5 MB. Attach a smaller one.' : '';
     const validate = () => {
       const d = new FormData(form);
-      const cv = d.get('cv');
-      const cvOk = !(cv instanceof File) || !cv.size || (/\.(pdf|docx?)$/i.test(cv.name) && cv.size <= 5 * 1024 * 1024);
+      const r = rules();
       const phone = String(d.get('phone') || '').trim();
       const digits = phone.replace(/\D/g, '');
       const phoneOk = /^[+\d\s().-]+$/.test(phone) && digits.length >= 7 && digits.length <= 15;
-      // Internship applications must include a degree certificate or college ID.
-      const doc = d.get('id_doc');
-      const docMsg = type.value !== 'internship' ? ''
-        : !(doc instanceof File) || !doc.size ? 'Attach your degree certificate or college ID.'
-        : !/\.(pdf|jpe?g|png|webp)$/i.test(doc.name) ? 'Attach it as a PDF or a photo (JPG or PNG).'
-        : doc.size > 5 * 1024 * 1024 ? 'The file is over 5 MB. Attach a smaller one.' : '';
       return [
         setErr('name', String(d.get('name') || '').trim() ? '' : 'Add your name so we know who to reply to.'),
         setErr('email', /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(d.get('email') || '').trim()) ? '' : 'Enter an email address we can reply to, like name@company.com.'),
-        setErr('phone', phoneOk ? '' : 'Add a phone or WhatsApp number with the country code, like +971 50 123 4567.'),
-        setErr('id_doc', docMsg),
+        setErr('phone', phoneOk ? '' : 'Add a mobile or WhatsApp number with the country code, like +971 50 123 4567.'),
         setErr('message', String(d.get('message') || '').trim().length >= 10 ? '' : 'Tell us a little more, at least a sentence.'),
-        setErr('cv', cvOk ? '' : 'Attach a PDF or Word file under 5 MB, or leave it empty.'),
+        setErr('id_doc', r.idDoc ? fileMsg(d.get('id_doc'), true, /\.(pdf|jpe?g|png|webp)$/i, 'Attach your degree certificate or college ID.', 'Attach it as a PDF or a photo (JPG or PNG).') : ''),
+        setErr('cv', r.cv ? fileMsg(d.get('cv'), r.cv === 'required', /\.(pdf|docx?)$/i, 'Attach your CV.', 'Attach your CV as a PDF or Word file.') : ''),
       ].every(Boolean);
     };
 

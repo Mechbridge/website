@@ -46,6 +46,7 @@ export interface Lead {
   has_cv: boolean;
   id_doc_name: string; // internship applications: degree certificate or college ID
   has_id_doc: boolean;
+  details: Record<string, string>; // topic-specific answers (src/lib/lead-fields.ts)
   status: LeadStatus;
   notes: string;
   assigned_to: number | null; // staff user id

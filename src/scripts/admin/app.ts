@@ -14,6 +14,7 @@ import {
   WEBMAIL_LANGUAGES, WEBMAIL_TIMEZONES,
 } from '../../lib/roles';
 import { draftEmailHtml, draftEmailText, signatureHtml, type Signature } from '../../lib/mail-html';
+import { detailLabel } from '../../lib/lead-fields';
 import { u } from '../../lib/url';
 
 /* ================= tiny DOM helper ================= */
@@ -534,6 +535,7 @@ async function leadSheet(leadId: number, reload: () => Promise<void> | void) {
   if (l.country) row('Based in', l.country);
   if (l.ref_title) row('For', l.ref_title);
   if (l.subject) row('Subject', l.subject);
+  for (const [k, v] of Object.entries(l.details ?? {})) row(detailLabel(l.type, k), v);
   if (cv) row('CV', cv);
   if (idDoc) row('Degree or ID', idDoc);
   if (l.distributed_at) row('Distributed', `${l.distributed_to}, ${fmtTime(l.distributed_at)}`);
