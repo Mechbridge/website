@@ -9,7 +9,7 @@ import type {
 import { CORE_MAILBOXES, MAIL_DOMAIN, mailAddress, mailAddressError, mailPasswordError, mailNameError, canManageMailboxes, cleanPerms, cleanWebmailSettings } from '../roles';
 import { LEAD_STATUSES, canManageCertificates, canManageUsers, leadTypesFor, newCertificateCode, normaliseCode, postingKindsFor, slugify } from '../roles';
 
-const KEY = 'mb-demo-v5';
+const KEY = 'mb-demo-v6';
 export const DEMO_PASSWORD = 'demo1234';
 export const DEMO_ACCOUNTS: { email: string; name: string; role: Role }[] = [
   { email: 'admin@demo.mechbridge', name: 'Demo Superadmin', role: 'superadmin' },
@@ -72,7 +72,8 @@ function seed(): State {
     const lead = {
       id: id++, type, name: `Sample Lead ${String(i + 1).padStart(2, '0')}`, email: `lead${i + 1}@example.com`, phone: '', country: countries[rnd(countries.length)],
       subject: '', message: msgs[type], ref_id: ref?.id ?? null, ref_title: ref?.title ?? '', cv_name: type === 'job' || (type === 'internship' && rnd(2)) ? 'sample-cv.pdf' : '',
-      has_cv: false, status, notes: '', assigned_to: assigned?.id ?? null, assigned_name: assigned?.name ?? '',
+      has_cv: false, id_doc_name: type === 'internship' ? 'sample-college-id.pdf' : '', has_id_doc: false,
+      status, notes: '', assigned_to: assigned?.id ?? null, assigned_name: assigned?.name ?? '',
       distributed_to: status === 'distributed' ? ['Dubai design team', 'KSA delivery partner', 'India estimation team'][rnd(3)] : '',
       distributed_at: status === 'distributed' ? created : '', created_at: created, updated_at: created,
     };
@@ -185,10 +186,16 @@ export const demoApi: Api = {
     const refId = Number(g('ref_id')) || null;
     const ref = s.postings.find((p) => p.id === refId);
     const cv = form.get('cv');
+    const idDoc = form.get('id_doc');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(g('email'))) fail(400, 'Enter an email address we can reply to.');
+    const digits = g('phone').replace(/\D/g, '');
+    if (!/^[+\d\s().-]+$/.test(g('phone')) || digits.length < 7 || digits.length > 15) fail(400, 'Add a phone or WhatsApp number with the country code, like +971 50 123 4567.');
+    if (g('type') === 'internship' && !(idDoc instanceof File && idDoc.size)) fail(400, 'Attach your degree certificate or college ID.');
     const lead: State['leads'][number] = {
       id: s.seq++, type: g('type') as LeadType, name: g('name'), email: g('email'), phone: g('phone'), country: g('country'),
       subject: g('subject'), message: g('message'), ref_id: ref?.id ?? null, ref_title: ref?.title ?? '',
-      cv_name: cv instanceof File && cv.size ? cv.name : '', has_cv: false, status: 'new', notes: '',
+      cv_name: cv instanceof File && cv.size ? cv.name : '', has_cv: false,
+      id_doc_name: g('type') === 'internship' && idDoc instanceof File && idDoc.size ? idDoc.name : '', has_id_doc: false, status: 'new', notes: '',
       assigned_to: null, assigned_name: '', distributed_to: '', distributed_at: '', created_at: now(), updated_at: now(),
     };
     s.leads.unshift(lead);
@@ -265,6 +272,7 @@ export const demoApi: Api = {
     return csvUrl(['id', 'created_at', 'updated_at', 'type', 'status', 'name', 'email', 'phone', 'country', 'subject', 'ref_title', 'assigned_name', 'distributed_to', 'distributed_at', 'message', 'notes', 'cv_name'], rows);
   },
   cvUrl: () => null,
+  idDocUrl: () => null,
 
   async postings(f: PostingFilter): Promise<PostingPage> {
     await tick();

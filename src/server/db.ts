@@ -171,15 +171,16 @@ const LEAD_SELECT = `SELECT l.*, COALESCE(u.name, '') assigned_name FROM leads l
 const toLead = (r: Row): Lead => ({
   id: Number(r.id), type: r.type as LeadType, name: String(r.name), email: String(r.email), phone: String(r.phone),
   country: String(r.country), subject: String(r.subject), message: String(r.message), ref_id: r.ref_id == null ? null : Number(r.ref_id),
-  ref_title: String(r.ref_title), cv_name: String(r.cv_name), has_cv: !!r.cv_path, status: r.status as LeadStatus,
+  ref_title: String(r.ref_title), cv_name: String(r.cv_name), has_cv: !!r.cv_path,
+  id_doc_name: String(r.id_doc_name ?? ''), has_id_doc: !!r.id_doc_path, status: r.status as LeadStatus,
   notes: String(r.notes), assigned_to: r.assigned_to == null ? null : Number(r.assigned_to), assigned_name: String(r.assigned_name ?? ''),
   distributed_to: String(r.distributed_to ?? ''), distributed_at: String(r.distributed_at ?? ''),
   created_at: String(r.created_at), updated_at: String(r.updated_at ?? r.created_at),
 });
 
-export function createLead(l: Omit<Lead, 'id' | 'has_cv' | 'status' | 'notes' | 'created_at' | 'updated_at' | 'assigned_to' | 'assigned_name' | 'distributed_to' | 'distributed_at'> & { cv_path?: string }) {
-  const r = run(`INSERT INTO leads (type, name, email, phone, country, subject, message, ref_id, ref_title, cv_name, cv_path) VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
-    l.type, l.name, l.email, l.phone, l.country, l.subject, l.message, l.ref_id, l.ref_title, l.cv_name, l.cv_path ?? '');
+export function createLead(l: Omit<Lead, 'id' | 'has_cv' | 'has_id_doc' | 'status' | 'notes' | 'created_at' | 'updated_at' | 'assigned_to' | 'assigned_name' | 'distributed_to' | 'distributed_at'> & { cv_path?: string; id_doc_path?: string }) {
+  const r = run(`INSERT INTO leads (type, name, email, phone, country, subject, message, ref_id, ref_title, cv_name, cv_path, id_doc_name, id_doc_path) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+    l.type, l.name, l.email, l.phone, l.country, l.subject, l.message, l.ref_id, l.ref_title, l.cv_name, l.cv_path ?? '', l.id_doc_name, l.id_doc_path ?? '');
   const id = Number(r.lastInsertRowid);
   logLead(id, 'website', 'received', 'Submitted on the website');
   return id;

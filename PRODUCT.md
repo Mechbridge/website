@@ -61,7 +61,7 @@ A multidisciplinary MEP consultancy specialising in HVAC, firefighting and fire 
 ## Evidence on Hand
 
 - Logo, hero photo, brand tokens, clay background, and 50+ AI-generated illustrative photos (see IMAGE-GENERATION.md; none show real staff or projects).
-- No testimonials or client logos. The only named projects are the three "Recent highlights" supplied by Mechbridge: Jasleena’s Residence, Mohammed’s Residence and Zangos. Present them as recent highlights, not as the client list. Don't fabricate any others.
+- No testimonials or client logos. The only named projects are the three "Recent highlights" supplied by Mechbridge: Murthaz Residence (Thalassery, Kerala: HVAC design), Jasleena’s Residence (Aluva, Kerala: HVAC design and execution) and Zangos (Al Khobar, Saudi Arabia: HVAC load calculations). Present them as recent highlights, not as the client list. Don't fabricate any others.
 
 ## Product Principles
 

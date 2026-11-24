@@ -6,14 +6,14 @@ import { readFileSync, mkdirSync } from 'node:fs';
 
 const W = 1200, H = 630;
 const cards = [
-  ['home', 'hero-home', 'MEP consultants of the engineering shaping the Middle East', 'HVAC · Firefighting · Plumbing · MEP Design · Estimation'],
-  ['services', 'services-hero', 'MEP engineering, from load calculations to as-built', 'Six offerings for the GCC and India'],
+  ['home', 'hero-home', 'The MEP consultants behind the walls you trust, from Middle East to the world', 'HVAC · Firefighting · Plumbing · MEP Design · Estimation'],
+  ['services', 'services-hero', 'MEP engineering, from load calculations to as-built', 'From the Middle East to the world'],
   ['hvac-engineering', 'svc-hvac-wide', 'HVAC Engineering', 'Air conditioning · Ventilation · Cooling and heating systems'],
   ['firefighting-engineering', 'svc-fire-wide', 'Firefighting Engineering', 'Fire protection · Suppression · Hydraulic design'],
   ['plumbing-engineering', 'svc-plumbing-wide', 'Plumbing Engineering', 'Water supply · Drainage · Public health systems'],
   ['mep-design', 'svc-design-wide', 'MEP Design', 'CAD drafting · Coordination · Shop drawings'],
   ['mep-estimation-project-management', 'svc-estimation-wide', 'MEP Estimation and Project Management', 'BOQ · Cost estimation · Tendering · Project execution'],
-  ['training', 'training-hero', 'Professional MEP Engineering Training', 'HVAC · Firefighting · Plumbing · AutoCAD · Revit MEP'],
+  ['training', 'training-hero', 'Professional MEP Engineering Training', 'HVAC · Firefighting · Plumbing · 3,000+ students trained'],
   ['internships', 'training-cohort', 'GCC-Ready Internship Package', 'For engineering students and fresh graduates'],
   ['careers', 'careers-hero', 'Careers in MEP engineering', 'UAE · Saudi Arabia · Qatar · Kuwait · Bahrain · Oman · India'],
   ['about', 'about-hero', 'An MEP consultancy, fifteen years in the making', 'Headquartered in Dubai, operating from Dubai and India'],

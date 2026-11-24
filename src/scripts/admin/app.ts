@@ -524,6 +524,7 @@ async function leadSheet(leadId: number, reload: () => Promise<void> | void) {
   const dist = h('input', { id: id(), value: l.distributed_to, placeholder: 'Team, partner or branch' });
   const notes = h('textarea', { id: id(), rows: '4' }, l.notes);
   const cv = l.cv_name ? (api.cvUrl(l.id) ? h('a', { class: 'link', href: api.cvUrl(l.id)!, download: l.cv_name }, `Download ${l.cv_name}`) : h('span', { class: 'adm-hint' }, `${l.cv_name} (files are not stored in the demo)`)) : null;
+  const idDoc = l.id_doc_name ? (api.idDocUrl(l.id) ? h('a', { class: 'link', href: api.idDocUrl(l.id)!, download: l.id_doc_name }, `Download ${l.id_doc_name}`) : h('span', { class: 'adm-hint' }, `${l.id_doc_name} (files are not stored in the demo)`)) : null;
   const dl = h('dl', { class: 'adm-dl' });
   const row = (k: string, v: Node | string) => dl.append(h('dt', {}, k), h('dd', {}, v));
   row('Type', LEAD_TYPE_LABELS[l.type]);
@@ -534,6 +535,7 @@ async function leadSheet(leadId: number, reload: () => Promise<void> | void) {
   if (l.ref_title) row('For', l.ref_title);
   if (l.subject) row('Subject', l.subject);
   if (cv) row('CV', cv);
+  if (idDoc) row('Degree or ID', idDoc);
   if (l.distributed_at) row('Distributed', `${l.distributed_to}, ${fmtTime(l.distributed_at)}`);
 
   const history = h('ol', { class: 'adm-history', 'aria-label': 'Lead history' }, h('li', { class: 'adm-hint' }, 'Loading history…'));

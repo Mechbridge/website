@@ -9,7 +9,7 @@ import { internship, course } from '../data/course';
 import { site } from '../data/site';
 
 const flow = [
-  ['Apply', 'Send the form with your CV. Tell us your degree and when you can start.'],
+  ['Apply', 'Send the form with your degree certificate or college ID, and your CV if you have one. Tell us your degree and when you can start.'],
   ['Conversation', 'A short call about your background and the GCC roles you are aiming for.'],
   ['The course', `${course.modules.map((m) => m.title).join(', ')}.`],
   ['Project work', 'Supervised shop drawings, coordination drawings and BOQs, reviewed by our engineers.'],
@@ -89,7 +89,7 @@ const flow = [
     <div class="wrap grid-12 enq">
       <div class="enq__copy stack">
         <h2 id="ap-h" data-split>Apply for the internship.</h2>
-        <p class="lede">Attach your CV if you have one ready. We reply with the next intake, the duration and the fee.</p>
+        <p class="lede">Attach your degree certificate or college ID, and your CV if you have one ready. We reply with the next intake, the duration and the fee.</p>
       </div>
       <div class="enq__form">
         <p class="picked" data-picked hidden>Applying for <strong data-ref-title></strong> <button type="button" data-unpick>Any intake instead</button></p>

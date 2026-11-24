@@ -48,6 +48,7 @@ export const httpApi: Api = {
   deleteLead: async (id) => { await req(`/admin/leads/${id}`, { method: 'DELETE' }); },
   leadsCsvUrl: async (f) => u(`/api/admin/leads/export.csv${qs({ ...f, page: undefined, pageSize: undefined })}`),
   cvUrl: (id) => u(`/api/admin/leads/${id}/cv`),
+  idDocUrl: (id) => u(`/api/admin/leads/${id}/id-doc`),
 
   postings: (f) => req(`/admin/postings${qs(f)}`),
   savePosting: (p, id) => req(id ? `/admin/postings/${id}` : '/admin/postings', send(id ? 'PUT' : 'POST', p)),

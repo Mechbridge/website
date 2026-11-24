@@ -168,6 +168,11 @@ const MIGRATIONS = [
   ALTER TABLE certificates ADD COLUMN signatory_name TEXT NOT NULL DEFAULT '';
   ALTER TABLE certificates ADD COLUMN signatory_title TEXT NOT NULL DEFAULT '';
   `,
+  // v4: internship applications attach a degree certificate or college ID.
+  `
+  ALTER TABLE leads ADD COLUMN id_doc_name TEXT NOT NULL DEFAULT '';
+  ALTER TABLE leads ADD COLUMN id_doc_path TEXT NOT NULL DEFAULT '';
+  `,
 ];
 
 function migrate(db) {

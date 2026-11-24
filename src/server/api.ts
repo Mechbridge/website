@@ -19,6 +19,16 @@ const KINDS: PostingKind[] = ['job', 'internship', 'training'];
 const ROLES: Role[] = ['superadmin', 'hr', 'training', 'sales', 'documentation'];
 const CV_EXT = ['.pdf', '.doc', '.docx'];
 const CV_MAX = 5 * 1024 * 1024;
+const ID_EXT = ['.pdf', '.jpg', '.jpeg', '.png', '.webp']; // internship: degree certificate or college ID
+const phoneOk = (p: string) => /^[+\d\s().-]+$/.test(p) && p.replace(/\D/g, '').length >= 7 && p.replace(/\D/g, '').length <= 15;
+async function saveUpload(file: File, ext: string) {
+  const name = `${Date.now()}-${randomBytes(6).toString('hex')}${ext}`;
+  await writeFile(path.join(dataDir(), 'uploads', name), Buffer.from(await file.arrayBuffer()));
+  return name;
+}
+const removeUploads = async (row: Record<string, unknown>) => {
+  for (const k of ['cv_path', 'id_doc_path']) if (row[k]) await unlink(path.join(dataDir(), 'uploads', path.basename(String(row[k])))).catch(() => {});
+};
 
 class HttpError extends Error { constructor(public status: number, msg: string) { super(msg); } }
 const json = (data: unknown, status = 200, headers: Record<string, string> = {}) =>
@@ -143,23 +153,30 @@ async function handle(ctx: APIContext, parts: string[], method: string): Promise
     const lead = {
       type, name: str(fd.get('name'), 120), email: str(fd.get('email'), 160), phone: str(fd.get('phone'), 40),
       country: str(fd.get('country'), 80), subject: str(fd.get('subject'), 200), message: str(fd.get('message'), 5000),
-      ref_id: null as number | null, ref_title: '', cv_name: '', cv_path: '',
+      ref_id: null as number | null, ref_title: '', cv_name: '', cv_path: '', id_doc_name: '', id_doc_path: '',
     };
     if (!lead.name) fail(400, 'Add your name.');
     if (!isEmail(lead.email)) fail(400, 'Enter an email address we can reply to.');
+    if (!phoneOk(lead.phone)) fail(400, 'Add a phone or WhatsApp number with the country code, like +971 50 123 4567.');
     if (lead.message.length < 10) fail(400, 'Tell us a little more, at least a sentence.');
     const refId = Number(fd.get('ref_id'));
     if (refId) { const p = D.getPosting(refId); if (p) { lead.ref_id = p.id; lead.ref_title = p.title; } }
+    // Check every file before saving any, so a rejected form leaves nothing behind.
     const cv = fd.get('cv');
-    if (cv instanceof File && cv.size > 0) {
-      const ext = path.extname(cv.name).toLowerCase();
-      if (!CV_EXT.includes(ext)) fail(400, 'Attach your CV as a PDF or Word file.');
+    const hasCv = cv instanceof File && cv.size > 0;
+    if (hasCv) {
+      if (!CV_EXT.includes(path.extname(cv.name).toLowerCase())) fail(400, 'Attach your CV as a PDF or Word file.');
       if (cv.size > CV_MAX) fail(400, 'Your CV is over 5 MB. Attach a smaller file.');
-      const file = `${Date.now()}-${randomBytes(6).toString('hex')}${ext}`;
-      await writeFile(path.join(dataDir(), 'uploads', file), Buffer.from(await cv.arrayBuffer()));
-      lead.cv_name = cv.name.slice(0, 160);
-      lead.cv_path = file;
     }
+    const idDoc = fd.get('id_doc');
+    const hasIdDoc = type === 'internship' && idDoc instanceof File && idDoc.size > 0;
+    if (type === 'internship') {
+      if (!hasIdDoc) fail(400, 'Attach your degree certificate or college ID.');
+      if (!ID_EXT.includes(path.extname((idDoc as File).name).toLowerCase())) fail(400, 'Attach the degree certificate or college ID as a PDF or a photo (JPG or PNG).');
+      if ((idDoc as File).size > CV_MAX) fail(400, 'The degree certificate or college ID is over 5 MB. Attach a smaller file.');
+    }
+    if (hasCv) { lead.cv_path = await saveUpload(cv as File, path.extname((cv as File).name).toLowerCase()); lead.cv_name = (cv as File).name.slice(0, 160); }
+    if (hasIdDoc) { lead.id_doc_path = await saveUpload(idDoc as File, path.extname((idDoc as File).name).toLowerCase()); lead.id_doc_name = (idDoc as File).name.slice(0, 160); }
     const id = D.createLead(lead);
     notifyLead({ ...lead, id, label: LEAD_TYPE_LABELS[type] }).catch((e) => console.error('[notify]', e.message));
     return json({ ok: true, id }, 201);
@@ -210,7 +227,7 @@ async function handle(ctx: APIContext, parts: string[], method: string): Promise
       if (c === 'countries' && method === 'GET') return json(D.leadCountries(types));
       if (c === 'export.csv' && method === 'GET') {
         const rows = D.exportLeads(types, leadFilter(sp), u.id);
-        const cols = ['id', 'created_at', 'updated_at', 'type', 'status', 'name', 'email', 'phone', 'country', 'subject', 'ref_title', 'assigned_name', 'distributed_to', 'distributed_at', 'message', 'notes', 'cv_name'];
+        const cols = ['id', 'created_at', 'updated_at', 'type', 'status', 'name', 'email', 'phone', 'country', 'subject', 'ref_title', 'assigned_name', 'distributed_to', 'distributed_at', 'message', 'notes', 'cv_name', 'id_doc_name'];
         return csv(`mechbridge-leads-${today()}.csv`, cols, rows);
       }
       if (c === 'bulk' && method === 'POST') {
@@ -223,7 +240,7 @@ async function handle(ctx: APIContext, parts: string[], method: string): Promise
           for (const id of ids) {
             const row = D.getLeadRow(id);
             if (!row || !types.includes(row.type as LeadType)) continue;
-            if (row.cv_path) await unlink(path.join(dataDir(), 'uploads', path.basename(String(row.cv_path)))).catch(() => {});
+            await removeUploads(row);
             D.deleteLead(id); n++;
           }
           return json({ changed: n });
@@ -247,6 +264,12 @@ async function handle(ctx: APIContext, parts: string[], method: string): Promise
         const name = String(row!.cv_name).replace(/[^\w.\- ]/g, '_');
         return new Response(buf, { headers: { 'content-type': 'application/octet-stream', 'content-disposition': `attachment; filename="${name}"`, 'cache-control': 'no-store' } });
       }
+      if (d === 'id-doc' && method === 'GET') {
+        if (!row!.id_doc_path) fail(404, 'No degree certificate or college ID attached.');
+        const buf = await readFile(path.join(dataDir(), 'uploads', path.basename(String(row!.id_doc_path))));
+        const name = String(row!.id_doc_name).replace(/[^\w.\- ]/g, '_');
+        return new Response(buf, { headers: { 'content-type': 'application/octet-stream', 'content-disposition': `attachment; filename="${name}"`, 'cache-control': 'no-store' } });
+      }
       if (d === 'events' && method === 'GET') return json(D.leadEvents(id));
       if (!d && method === 'GET') return json(D.getLead(id));
       if (!d && method === 'PATCH') {
@@ -260,7 +283,7 @@ async function handle(ctx: APIContext, parts: string[], method: string): Promise
       }
       if (!d && method === 'DELETE') {
         need(u.role === 'superadmin');
-        if (row!.cv_path) await unlink(path.join(dataDir(), 'uploads', path.basename(String(row!.cv_path)))).catch(() => {});
+        await removeUploads(row!);
         D.deleteLead(id);
         return json({ ok: true });
       }

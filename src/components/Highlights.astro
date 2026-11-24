@@ -50,7 +50,9 @@ const src = (p: string, small = false) => u(`/images/projects/${p}${small ? '-64
           </div>
           <div class="hl__cap">
             <h3>{p.name}</h3>
-            <p class="mono hl__type">{p.type}{p.note ? ` · ${p.note}` : ''}</p>
+            <p class="mono hl__loc">{p.location}{p.note ? ` · ${p.note}` : ''}</p>
+            <p class="hl__scope">{p.scope}</p>
+            <p class="body hl__sum">{p.summary}</p>
           </div>
         </li>
       ))}
@@ -128,7 +130,10 @@ const src = (p: string, small = false) => u(`/images/projects/${p}${small ? '-64
   .hl__nav { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; border: 0; background: transparent; color: var(--cream-300); cursor: pointer; }
   .hl__nav:hover, .hl__nav:focus-visible { background: rgb(240 225 206 / .16); }
   .hl__cap h3 { font-size: clamp(1.35rem, 2vw, 1.7rem); }
-  .hl__type { margin-top: 4px; color: var(--navy-400); font-size: var(--t-micro); text-transform: uppercase; letter-spacing: .08em; }
+  .hl__cap { display: grid; gap: 8px; justify-items: start; }
+  .hl__loc { color: var(--navy-400); font-size: var(--t-micro); text-transform: uppercase; letter-spacing: .08em; }
+  .hl__scope { display: inline-flex; align-items: center; min-height: 28px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--red-500); color: var(--red-500); font-weight: 600; font-size: .8125rem; }
+  .hl__sum { color: var(--navy-600); max-width: 46ch; }
 
   .hl__foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px 24px; margin-top: clamp(36px, 5vw, 56px); padding-top: 24px; border-top: 1px solid rgb(26 40 65 / .2); }
 

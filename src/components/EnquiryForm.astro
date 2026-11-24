@@ -65,8 +65,9 @@ const LABELS: Record<LeadType, string> = {
       </select>
     </div>
     <div class="field">
-      <label for={`${id}-phone`}>Phone or WhatsApp <span class="hint">(optional)</span></label>
-      <input id={`${id}-phone`} name="phone" type="tel" autocomplete="tel" inputmode="tel" />
+      <label for={`${id}-phone`}>Phone or WhatsApp</label>
+      <input id={`${id}-phone`} name="phone" type="tel" autocomplete="tel" inputmode="tel" placeholder="+971 50 123 4567" required aria-describedby={`${id}-phone-err`} />
+      <p class="err" id={`${id}-phone-err`} aria-live="polite"></p>
     </div>
   </div>
   {serviceSelect && (
@@ -88,6 +89,13 @@ const LABELS: Record<LeadType, string> = {
       <label for={`${id}-cv`}>CV <span class="hint">(PDF or Word, up to 5 MB, optional)</span></label>
       <input id={`${id}-cv`} name="cv" type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" aria-describedby={`${id}-cv-err`} />
       <p class="err" id={`${id}-cv-err`} aria-live="polite"></p>
+    </div>
+  )}
+  {types.includes('internship') && (
+    <div class="field" data-show-for="internship">
+      <label for={`${id}-iddoc`}>Degree certificate or college ID <span class="hint">(PDF or photo, up to 5 MB, required)</span></label>
+      <input id={`${id}-iddoc`} name="id_doc" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp" aria-describedby={`${id}-iddoc-err`} />
+      <p class="err" id={`${id}-iddoc-err`} aria-live="polite"></p>
     </div>
   )}
   <input type="checkbox" name="botcheck" class="sr-only" tabindex="-1" autocomplete="off" aria-hidden="true" />
@@ -144,9 +152,20 @@ const LABELS: Record<LeadType, string> = {
       const d = new FormData(form);
       const cv = d.get('cv');
       const cvOk = !(cv instanceof File) || !cv.size || (/\.(pdf|docx?)$/i.test(cv.name) && cv.size <= 5 * 1024 * 1024);
+      const phone = String(d.get('phone') || '').trim();
+      const digits = phone.replace(/\D/g, '');
+      const phoneOk = /^[+\d\s().-]+$/.test(phone) && digits.length >= 7 && digits.length <= 15;
+      // Internship applications must include a degree certificate or college ID.
+      const doc = d.get('id_doc');
+      const docMsg = type.value !== 'internship' ? ''
+        : !(doc instanceof File) || !doc.size ? 'Attach your degree certificate or college ID.'
+        : !/\.(pdf|jpe?g|png|webp)$/i.test(doc.name) ? 'Attach it as a PDF or a photo (JPG or PNG).'
+        : doc.size > 5 * 1024 * 1024 ? 'The file is over 5 MB. Attach a smaller one.' : '';
       return [
         setErr('name', String(d.get('name') || '').trim() ? '' : 'Add your name so we know who to reply to.'),
         setErr('email', /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(d.get('email') || '').trim()) ? '' : 'Enter an email address we can reply to, like name@company.com.'),
+        setErr('phone', phoneOk ? '' : 'Add a phone or WhatsApp number with the country code, like +971 50 123 4567.'),
+        setErr('id_doc', docMsg),
         setErr('message', String(d.get('message') || '').trim().length >= 10 ? '' : 'Tell us a little more, at least a sentence.'),
         setErr('cv', cvOk ? '' : 'Attach a PDF or Word file under 5 MB, or leave it empty.'),
       ].every(Boolean);

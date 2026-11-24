@@ -44,6 +44,8 @@ export interface Lead {
   ref_title: string;
   cv_name: string;
   has_cv: boolean;
+  id_doc_name: string; // internship applications: degree certificate or college ID
+  has_id_doc: boolean;
   status: LeadStatus;
   notes: string;
   assigned_to: number | null; // staff user id

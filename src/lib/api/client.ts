@@ -31,6 +31,7 @@ export interface Api {
   deleteLead(id: number): Promise<void>;
   leadsCsvUrl(f: LeadFilter): Promise<string>; // URL or object URL
   cvUrl(id: number): string | null;
+  idDocUrl(id: number): string | null; // internship degree certificate or college ID
   // postings (paged)
   postings(f: PostingFilter): Promise<PostingPage>;
   savePosting(p: PostingInput, id?: number): Promise<Posting>;

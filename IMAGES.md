@@ -125,13 +125,13 @@ To replace one: export a WebP at the minimum size or larger, name it exactly as 
 
 ## Recent highlights (client photos)
 
-Supplied by Mechbridge on 2026-11-22. Files in `public/images/projects/`: `<id>.webp` (up to 1200px) and `<id>-640.webp`. Captions, alt text and crop positions are in `src/data/projects.ts`.
+Supplied by Mechbridge (upscaled versions, 2026-11-24). Files in `public/images/projects/`: `<id>.webp` (up to 1400px) and `<id>-640.webp`. Captions, alt text and crop positions are in `src/data/projects.ts`.
 
 | Id | Project | What it shows |
 |---|---|---|
 | `jasleena-1` | Jasleena’s Residence | Double-height living room, curved glass balcony, timber staircase |
 | `jasleena-2` | Jasleena’s Residence | Sitting room with crystal chandelier |
 | `jasleena-3` | Jasleena’s Residence | Hallway with timber ceiling feature |
-| `mohammed-1` | Mohammed’s Residence | Bedroom with patterned grey curtains |
-| `mohammed-2` | Mohammed’s Residence | Balcony with wicker chairs |
-| `zangos-1` | Zangos | Restaurant shopfront, 3D visual (cropped from a phone screenshot of the presentation PDF) |
+| `murthaz-1` | Murthaz Residence | Bedroom with patterned grey curtains |
+| `murthaz-2` | Murthaz Residence | Balcony with wicker chairs |
+| `zangos-1` | Zangos | Restaurant shopfront, 3D visual |
